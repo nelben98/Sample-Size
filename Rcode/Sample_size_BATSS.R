@@ -95,7 +95,6 @@ multinomial_generation <-
              prob_dist,
              size){
         
-        
         sapp_prob<-apply(prob_dist  # mu
                          ,1
                          ,function(x)
@@ -188,35 +187,24 @@ multinom_rand_dset2<- data.frame(primOutDist_panth[,2])
 
 source(paste0(getwd(),"/batss_glm_breakdown.R"))
 scenario1 = batss.glm.pom(   
-    model           = y ~ treatment
-    ,
+    model           = y ~ treatment,
     var             = list(y = multinomial_random,
-                           treatment = treatalloc.fun)
-    ,
-    var.control     = list(y = list(size= 1))
-    ,
-    family          = "pom"
-    ,
-    link            = 'identity'
-    ,
+                           treatment = treatalloc.fun),
+    var.control     = list(y = list(size= 1)),
+    family          = "pom",
+    link            = 'identity',
     beta            = list(multinom_rand_dset2,
                            multinom_rand_dset1  # this is the control
-                           )
-    , # this is the treatment
-    which           = c(2)
-    ,   # Select which groups are treatments
-    R               = Trials
-    ,
-    control.fixed = list(mean = list( treatment = 0), prec = 0.1)
-    ,
-    control.compute=list(dic=TRUE, cpo=TRUE, waic=TRUE, config = TRUE)
-    ,
+                           ), # this is the treatment
+    which           = c(2),   # Select which groups are treatments
+    R               = Trials,
+    control.fixed = list(mean = list( treatment = 0), prec = 0.1),
+    control.compute=list(dic=TRUE, cpo=TRUE, waic=TRUE, config = TRUE),
     alternative     = c("greater")
     , # One or two sided hypothesis
-    map_probabilities = TRUE
-    , # This variable will apply new maps to the days of
+    map_probabilities = TRUE, # This variable will apply new maps to the days of
                               # day free support- estimation.
-    
+                             
         # RAR:
         # RAR option not used as we have uniform sampling 
         #   - continuously sample to Max sample size/ Futitility/ Efficacy
@@ -224,42 +212,26 @@ scenario1 = batss.glm.pom(
     #RAR.control     = list("gamma"=3, "eta"=1.4,"nu"=0.1),
     #delta.RAR       = 0,
     
-    prob0           = c("UC"=1,"Simvastatin"=1)
-    ,#,"Baricitinib"=1),
-    N               = 504*3
-    , # Assume the maximum cap of hypoinflammatory is reached
-    interim         = list(recruited=list(m0=300 #89*3 # Trigger interim at 89 patients per arm
+    prob0           = c("UC"=1,"Simvastatin"=1),#,"Baricitinib"=1),
+    N               = 504*3, # Assume the maximum cap of hypoinflammatory is reached
+    interim         = list(recruited=list(m0=80*3 #89*3 # Trigger interim at 89 patients per arm
                                          ,m = 49*3  # As per the recruitment expected Do interims at 49/ arm
-                                         ))
-    ,
-    
-    eff.arm         = efficacy.arm.fun
-    , # Efficiency function of posteriors
-    delta.eff       = 1.1
-    , # Select which interims select efficiency beta P(beta > delta.fut)
-    eff.arm.control = list(b.eff = 0.78)
-    , # select the probability of the posterior > beta  
-    fut.arm         = futility.arm.fun
-    ,
-    delta.fut       = 1.075
-    , # select the analysed efficiency beta P(beta > delta.fut)
-    fut.arm.control = list(b.fut = 0.22)
-    , # select the probability of the posterior > beta  
-    delta.RAR=0
-    ,
-    computation     = "sequential"
-    ,
+                                         )),
+
+    eff.arm         = efficacy.arm.fun, # Efficiency function of posteriors
+    delta.eff       = 1.1, # Select which interims select efficiency beta P(beta > delta.fut)
+    eff.arm.control = list(b.eff = 0.78), # select the probability of the posterior > beta  
+    fut.arm         = futility.arm.fun,
+    delta.fut       = 1.075, # select the analysed efficiency beta P(beta > delta.fut)
+    fut.arm.control = list(b.fut = 0.22), # select the probability of the posterior > beta  
+    delta.RAR=0,
+    computation     = "sequential",
     #mc.cores        = parallel::detectCores()-1,
-    H0              = FALSE
-    ,
-    eff.trial=NULL
-    ,
-    fut.trial=NULL
-    ,
-    RAR = NULL
-    ,
-    extended = 1
-    )
+    H0              = FALSE,
+    eff.trial=NULL,
+    fut.trial=NULL,
+    RAR = NULL,
+    extended = 1)
 
 print(scenario1)
 summary(scenario1)
