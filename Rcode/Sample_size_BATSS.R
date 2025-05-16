@@ -108,7 +108,8 @@ multinomial_generation <-
     }
 
 # different version - defined in battss_glm_breakdown - not using n (n is number of wors in prob_dist)
-multinomial_random(prob_dist   = t(primOutDist_panth[,1]) #primOutDist_panth[1:4,]
+multinomial_generation(
+                    prob_dist   = t(primOutDist_panth[,1]) #primOutDist_panth[1:4,]
                    ,size        = 1)
 
 apply(t(primOutDist_panth[,1])  # mu
@@ -127,7 +128,7 @@ a
 
 
 # function for the allocation (this is the randomisation which should be minimisation but fairly equal to this)
-treatalloc.fun = function(m,prob){
+treatalloc.fun  = function(m,prob){
     prob = abs(prob)/sum(abs(prob)) 
     m0.g = floor(prob*m)
     m0   = sum(m0.g)
@@ -185,7 +186,7 @@ multinom_rand_dset2<-data.frame(treatment_dist= c(primOutDist_panth[1:3,Pheno]+0
 multinom_rand_dset1<- data.frame(primOutDist_panth[,1])
 multinom_rand_dset2<- data.frame(primOutDist_panth[,2])
 
-source("C:/Users/nb221/OneDrive - Imperial College London/Documents/Panther_NEL/PANTHER_personal/Sample Size/batss_glm_breakdown.R")
+source(paste0(getwd(),"/batss_glm_breakdown.R"))
 scenario1 = batss.glm.pom(   
     model           = y ~ treatment
     ,
