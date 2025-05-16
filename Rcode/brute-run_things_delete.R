@@ -40,8 +40,8 @@ delta.RAR=0
 computation     = "sequential"
 #mc.cores        = parallel::detectCores()-1,
 H0              = FALSE
-eff.trial=NULL
-fut.trial=NULL
+eff.trial=efficacy.arm.fun
+fut.trial=futility.arm.fun
 RAR = NULL
 extended = 1
 delta.RAR=0
@@ -226,7 +226,7 @@ if (family !='pom'){
 # 
 
 
-
+fit =NA
 fit =try( inla(formula=model, data=data, family=family,
                control.family=list(control.link=list(model=link)),
                control.fixed = list(mean = list( treat = 0), prec = 0.1),
