@@ -55,7 +55,7 @@ setwd(paste0(rstudioapi::getSourceEditorContext()$path,"/.."))
 Trials <- 10   #number of trials 
 
 #  Distributions in columns, each row corresponding to an outcome value.
-primOutDist_panth<- read.csv("VFDdistributions_logodds.csv",header=TRUE) |> 
+primOutDist_panth<- read.csv(paste0(getwd(),"/../","excel_distributions/VFDdistributions_logodds.csv"),header=TRUE) |> 
     #make distribution of active the same as the passive
     dplyr::select(p_hypo_c, p_hypo_t, p_hypo_pooled, p_hyper_c, p_hyper_t )
 
