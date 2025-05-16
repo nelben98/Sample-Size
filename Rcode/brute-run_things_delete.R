@@ -1,9 +1,53 @@
 # generate data
 
+model           = y ~ treatment
+var             = list(y = multinomial_random,
+                       treatment = treatalloc.fun)
+var.control     = list(y = list(size= 1))
+family          = "pom"
+link            = 'identity'
+beta            = list(multinom_rand_dset2,# this is the treatment
+                       multinom_rand_dset1  # this is the control
+                       )
+which           = c(2)
+   # Select which groups are treatments
+R               = Trials
+control.fixed = list(mean = list( treatment = 0), prec = 0.1)
+control.compute=list(dic=TRUE, cpo=TRUE, waic=TRUE, config = TRUE)
+alternative     = c("greater")
+ # One or two sided hypothesis
+map_probabilities = TRUE
+# This variable will apply new maps to the days of
+# day free support- estimation.
+
+# RAR:
+# RAR option not used as we have uniform sampling 
+#   - continuously sample to Max sample size/ Futitility/ Efficacy
+#RAR             = prob.trippa,
+#RAR.control     = list("gamma"=3, "eta"=1.4,"nu"=0.1),
+#delta.RAR       = 0,
+prob0           = c("UC"=1,"Simvastatin"=1) #,"Baricitinib"=1),
+N               = 504*3 # Assume the maximum cap of hypoinflammatory is reached
+interim         = list(recruited=list(m0=80*3 #89*3 # Trigger interim at 89 patients per arm
+                                      ,m = 49*3))  # As per the recruitment expected Do interims at 49/ arm
+eff.arm         = efficacy.arm.fun # Efficiency function of posteriors
+delta.eff       = 1.1  # Select which interims select efficiency beta P(beta > delta.fut)
+eff.arm.control = list(b.eff = 0.78)  # select the probability of the posterior > beta  
+fut.arm         = futility.arm.fun
+delta.fut       = 1.075  # select the analysed efficiency beta P(beta > delta.fut)
+fut.arm.control = list(b.fut = 0.22)  # select the probability of the posterior > beta  
+delta.RAR=0
+computation     = "sequential"
+#mc.cores        = parallel::detectCores()-1,
+H0              = FALSE
+eff.trial=NULL
+fut.trial=NULL
+RAR = NULL
+extended = 1
 delta.RAR=0
 N = 504*3
 
-    
+int=1
     
 if(sum(!is.na(match(c("m0","m"),names(interim.recruited))))==2){
     size_look = seq(interim.recruited$m0,N,interim.recruited$m)  
@@ -75,7 +119,7 @@ for (var.count in 1:(length(var)-1)){
 #  Now try a dataset until it breaks
 #
 #
-
+int<-2
 # cat(paste0("\t start:",int,"\n"))
 set.seed((n.look+1)*int)  
 
@@ -181,14 +225,18 @@ if (family !='pom'){
 # open the dots! - INLA function without ... reading
 # 
 
-fit = inla(formula=model, data=data, family=family,
-           control.family=list(control.link=list(model=link)),
-           control.fixed = list(mean = list( treat = 0), prec = 0.1),
-           control.compute=list(dic=TRUE, cpo=TRUE, waic=TRUE, config = TRUE),
-           verbose=FALSE)
-           
 
-fit_null<-NULL
+
+fit =try( inla(formula=model, data=data, family=family,
+               control.family=list(control.link=list(model=link)),
+               control.fixed = list(mean = list( treat = 0), prec = 0.1),
+               control.compute=list(dic=TRUE, cpo=TRUE, waic=TRUE, config = TRUE),
+               verbose=FALSE)
+          ,silent = TRUE)
+
+grepl('Error',fit[1]) # if find error in the computation of INLA
+
+fit<-NULL
 
 
 #### Example with code from 'Ed_Code_Bayesian_seqdes.R'
@@ -205,9 +253,6 @@ inla(OSFD2 ~  treat ,
      control.fixed = list(mean = list( treat = 0), prec = 0.1),
      control.compute=list(dic=TRUE, cpo=TRUE, waic=TRUE, config = TRUE))
 
-
-
-?control.compute
 
 
 
