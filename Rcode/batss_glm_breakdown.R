@@ -670,7 +670,10 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
     for(lw in 1:n.look){# lw=0; lw=lw+1
         # size
         #cat(.p("look:",lw,"\n"))
+        
         INLA_fail = FALSE # set a new variable to explore whether the INLA connection failed or not
+        fit =NA
+        
         temp = table(data[,groupvar])
         id.look[lw,names(temp)] = temp 
         assign("n",temp, envir = env)  
@@ -690,32 +693,46 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
             # fit = inla(formula=model, data=data, family=family,
             #            control.family=list(control.link=list(model=link)),
             #            verbose=FALSE)
-            fit = do.call(INLA::inla,c(list(formula=model, data=data, family=family,
-                                            control.family=list(control.link=list(model=link)),
-                                            verbose=FALSE),dots))
+            
+            fit = try(
+                    do.call(INLA::inla,
+                            c(list(formula=model, data=data, family=family,
+                                   control.family=list(control.link=list(model=link)),
+                                   verbose=FALSE)
+                            ,dots)
+                            )
+                    ,silent = TRUE)
+            if (grepl('Error',fit[1])) INLA_fail=TRUE
         }
         #cat("E")           
         # posteriors, efficacy and futility
         aw = id.target$active
-        if (!is.null(eff.arm)) {
+        if (!is.null(eff.arm) & INLA_fail==FALSE) {
             mx.posterior_eff.lt[lw,aw] = apply(id.target[aw,c("id","alternative"),drop=FALSE],1,
                                                posterior.fun,fit=fit,delta=delta.eff[lw]) 
-        } else {
+        } else if (!is.null(eff.arm) & INLA_fail==TRUE) {
+            mx.posterior_eff.lt[lw,aw] = NA
+        }  else if (is.null(eff.arm)) {
             mx.posterior_eff.lt[lw,aw] = NA
         }
-        if (twodelta || (is.null(eff.arm) && !is.null(fut.arm))){
+        
+        if (twodelta || (is.null(eff.arm) && !is.null(fut.arm))){ # NOT ADD ISSE - BUT DO IF ITS THE CASE
             mx.posterior_fut.lt[lw,aw] = apply(id.target[aw,c("id","alternative"),drop=FALSE],1,
                                                posterior.fun,fit=fit,delta=delta.fut[lw])               
         }else{
-            if (!is.null(fut.arm)) {
+            if (!is.null(fut.arm) & INLA_fail==FALSE) {
                 mx.posterior_fut.lt[lw,aw] = mx.posterior_eff.lt[lw,aw]   
-            } else {
+            } else  if (!is.null(fut.arm) & INLA_fail==TRUE) {
+                mx.posterior_fut.lt[lw,aw] = NA
+            } else  if (is.null(fut.arm) ){
                 mx.posterior_fut.lt[lw,aw] = NA
             }
         }
-        if (!is.null(RAR)) {
+        if (!is.null(RAR)& INLA_fail==FALSE) {
             mx.posterior_RAR.lt[lw,aw] = apply(id.target[aw,c("id","alternative"),drop=FALSE],1,
                                                posterior.fun,fit=fit,delta=delta.RAR[lw])
+        } else if (!is.null(RAR)& INLA_fail==TRUE) {
+            mx.posterior_RAR.lt[lw,aw] = NA
         }
         
         #cat("F")           
@@ -749,8 +766,14 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
         eff.target = apply(mx.efficacy.lt[1:lw,,drop=FALSE],2,any)
         fut.target = apply(mx.futility.lt[1:lw,,drop=FALSE],2,any)
         
-        if (!is.null(eff.arm)) eff.stop = eff.trial(eff.target) else eff.stop = FALSE 
-        if (!is.null(fut.arm)) fut.stop = fut.trial(fut.target) else fut.stop = FALSE
+        if (!is.null(eff.arm) & INLA_fail==FALSE) {eff.stop = eff.trial(eff.target) }
+        else if (!is.null(eff.arm) & INLA_fail==TRUE) {eff.stop = FALSE }
+        else if (is.null(eff.arm)) {eff.stop = FALSE }
+        
+        if (INLA_fail==FALSE & !is.null(fut.arm)){ fut.stop = fut.trial(fut.target) }
+        else if ( INLA_fail==TRUE & !is.null(fut.arm)){ fut.stop = FALSE}
+        else if (is.null(fut.arm)) {fut.stop = FALSE}
+        
         #---
         # efficacy       
         if(any(mx.efficacy.lt[lw,aw])){
