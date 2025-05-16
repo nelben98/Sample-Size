@@ -23,7 +23,7 @@ library(stringr)
 #  Distributions in columns, each row corresponding to an outcome value.
 #  Code assumes names will be, eg, "pcontrol_subgrp1" for control in subphenotype 1
 #  and  "pactive_OR1_1_subgrp2" for active treatment with OR=1.1 in subphenotype 2
-primOutDist<-read.csv("prob_prim_out_VANISH.csv",header=TRUE) %>%
+primOutDist<-read.csv(paste0(getwd(),"/../","excel_distributions/prob_prim_out_VANISH.csv"),header=TRUE) %>%
         #make distribution of active the same as the passivel
         mutate(pactive_OR1_2_subgrp1 = pcontrol_subgrp1, 
                pactive_OR1_2_subgrp2 = pcontrol_subgrp2,
@@ -46,10 +46,10 @@ interimN<-list()
 ## The final row should contain the final max sample size.
 
 # subphenotype 1 - Hypo (70%)
-interimN[[1]]<-read.csv("interimN1.csv",header=TRUE)
+interimN[[1]]<-read.csv(paste0(getwd(),"/../","excel_distributions/interimN1.csv"),header=TRUE)
 
 # Subpheno 2 - Hyper (30%)
-interimN[[2]]<-read.csv("interimN2.csv",header=TRUE)
+interimN[[2]]<-read.csv(paste0(getwd(),"/../","excel_distributions/interimN2.csv"),header=TRUE)
 
 # total SS (both arms) in each subphenotype and overall
 phenoN<-list()
