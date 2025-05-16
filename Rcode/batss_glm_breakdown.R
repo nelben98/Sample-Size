@@ -670,6 +670,7 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
     for(lw in 1:n.look){# lw=0; lw=lw+1
         # size
         #cat(.p("look:",lw,"\n"))
+        INLA_fail = FALSE # set a new variable to explore whether the INLA connection failed or not
         temp = table(data[,groupvar])
         id.look[lw,names(temp)] = temp 
         assign("n",temp, envir = env)  
