@@ -1,0 +1,119 @@
+=========================================================================
+Log Path: ./log/treatment.log
+Program Path: C:/Users/nb221/OneDrive - Imperial College
+London/Documents/Panther_NEL/PANTHER_personal/Sample Size/Sample_size_BATSS.R
+Working Directory: C:/Users/nb221/OneDrive - Imperial College
+London/Documents/Panther_NEL/PANTHER_personal/Sample Size
+User Name: nb221
+R Version: 4.4.3 (2025-02-28 ucrt)
+Machine: IC-5CG2218XG4 x86-64
+Operating System: Windows 10 x64 build 19045
+Base Packages: stats graphics grDevices utils datasets methods base
+Other Packages: qdapTools_1.3.7 INLA_24.12.11 Matrix_1.7-2 dplyr_1.1.4
+magrittr_2.0.3 tidyr_1.3.1 BATSS_1.0.0
+Log Start Time: 2025-05-14 11:42:28.317807
+=========================================================================
+
+NULL
+
+NOTE: Log Print Time:  2025-05-14 11:42:45.932887
+NOTE: Elapsed Time: 17.6138341426849 secs
+
+[[1]]
+integer(0)
+
+[[2]]
+integer(0)
+
+[[3]]
+integer(0)
+
+[[4]]
+integer(0)
+
+[[5]]
+integer(0)
+
+[[6]]
+integer(0)
+
+[[7]]
+integer(0)
+
+[[8]]
+integer(0)
+
+[[9]]
+integer(0)
+
+[[10]]
+integer(0)
+
+[[11]]
+integer(0)
+
+[[12]]
+integer(0)
+
+[[13]]
+integer(0)
+
+[[14]]
+integer(0)
+
+[[15]]
+integer(0)
+
+[[16]]
+integer(0)
+
+[[17]]
+integer(0)
+
+[[18]]
+integer(0)
+
+[[19]]
+integer(0)
+
+[[20]]
+integer(0)
+
+[[21]]
+integer(0)
+
+[[22]]
+integer(0)
+
+[[23]]
+integer(0)
+
+[[24]]
+[1] 1
+
+[[25]]
+integer(0)
+
+[[26]]
+integer(0)
+
+[[27]]
+integer(0)
+
+[[28]]
+integer(0)
+
+[[29]]
+integer(0)
+
+[[30]]
+integer(0)
+
+
+NOTE: Log Print Time:  2025-05-14 11:42:45.942932
+NOTE: Elapsed Time: 0.0100448131561279 secs
+
+=========================================================================
+Log End Time: 2025-05-14 11:42:45.943825
+Log Elapsed Time: 0 00:00:17
+=========================================================================
