@@ -766,11 +766,11 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
         eff.target = apply(mx.efficacy.lt[1:lw,,drop=FALSE],2,any)
         fut.target = apply(mx.futility.lt[1:lw,,drop=FALSE],2,any)
         
-        if (!is.null(eff.arm) & INLA_fail==FALSE) {eff.stop = eff.trial(eff.target) 
+        if (!is.null(eff.arm) & INLA_fail==FALSE) {if(!is.na(eff.target)) eff.stop = eff.target else eff.stop =FALSE#eff.trial(eff.target) 
         } else if (!is.null(eff.arm) & INLA_fail==TRUE) {eff.stop = FALSE 
         } else if (is.null(eff.arm)) {eff.stop = FALSE }
         
-        if (INLA_fail==FALSE & !is.null(fut.arm)){ fut.stop = fut.trial(fut.target)
+        if (INLA_fail==FALSE & !is.null(fut.arm)){ if(!is.na(fut.target)) fut.stop =fut.target else fut.stop =FALSE
         } else if ( INLA_fail==TRUE & !is.null(fut.arm)){ fut.stop = FALSE
         } else if (is.null(fut.arm)) {fut.stop = FALSE}
         
