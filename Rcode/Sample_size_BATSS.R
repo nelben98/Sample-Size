@@ -56,8 +56,8 @@ Trials <- 10   #number of trials
 
 #  Distributions in columns, each row corresponding to an outcome value.
 primOutDist_panth<- read.csv(paste0(getwd(),"/../","excel_distributions/VFDdistributions_logodds.csv"),header=TRUE) |> 
-    #make distribution of active the same as the passive
-    dplyr::select(p_hypo_c, p_hypo_t, p_hypo_pooled, p_hyper_c, p_hyper_t )
+    # make distribution of active the same as the passive
+    dplyr::select(p_hyper_minus30 , p_hyper_80 )
 
 # samples_per_trial
 # Generate multinomial outcomes - of the 5 distributions
@@ -167,9 +167,6 @@ futility.trial.fun(c(B=TRUE,C=TRUE,D=TRUE,E=TRUE,F=FALSE))
 
 # simulation
 #BATSS using INLA's default normal priors, N(0,1000)
-Trials<-25
-
-
 
 
 ## Now try the code from inla above but with the data to be input in batss.glm
@@ -184,6 +181,7 @@ multinom_rand_dset2<-data.frame(treatment_dist= c(primOutDist_panth[1:3,Pheno]+0
 
 multinom_rand_dset1<- data.frame(primOutDist_panth[,1])
 multinom_rand_dset2<- data.frame(primOutDist_panth[,2])
+Trials<-2
 
 source(paste0(getwd(),"/batss_glm_breakdown.R"))
 scenario1 = batss.glm.pom(   
@@ -194,7 +192,7 @@ scenario1 = batss.glm.pom(
     family          = "pom",
     link            = 'identity',
     beta            = list(multinom_rand_dset2,
-                           multinom_rand_dset1  # this is the control
+                           multinom_rand_dset1 # this is the control
                            ), # this is the treatment
     which           = c(2),   # Select which groups are treatments
     R               = Trials,
@@ -214,22 +212,22 @@ scenario1 = batss.glm.pom(
     
     prob0           = c("UC"=1,"Simvastatin"=1),#,"Baricitinib"=1),
     N               = 504*3, # Assume the maximum cap of hypoinflammatory is reached
-    interim         = list(recruited=list(m0=80*3 #89*3 # Trigger interim at 89 patients per arm
+    interim         = list(recruited=list(m0=89*3 #89*3 # Trigger interim at 89 patients per arm
                                          ,m = 49*3  # As per the recruitment expected Do interims at 49/ arm
                                          )),
 
     eff.arm         = efficacy.arm.fun, # Efficiency function of posteriors
-    delta.eff       = 1.1, # Select which interims select efficiency beta P(beta > delta.fut)
-    eff.arm.control = list(b.eff = 0.78), # select the probability of the posterior > beta  
+    delta.eff       = log(1.1), # Select which interims select efficiency beta P(beta > delta.fut)
+    eff.arm.control = list(b.eff = 0.84), # select the probability of the posterior > beta  
     fut.arm         = futility.arm.fun,
-    delta.fut       = 1.075, # select the analysed efficiency beta P(beta > delta.fut)
+    delta.fut       = log(1.075), # select the analysed efficiency beta P(beta > delta.fut)
     fut.arm.control = list(b.fut = 0.22), # select the probability of the posterior > beta  
     delta.RAR=0,
     computation     = "sequential",
     #mc.cores        = parallel::detectCores()-1,
     H0              = FALSE,
-    eff.trial=NULL,
-    fut.trial=NULL,
+    eff.trial=efficacy.arm.fun,
+    fut.trial=futility.arm.fun,
     RAR = NULL,
     extended = 1)
 
@@ -237,7 +235,8 @@ print(scenario1)
 summary(scenario1)
 plot(scenario1)
 
-scenario1$H0
+scenario1 |> summary()   #pe - maginal using the log efficacy OR // #pf - maginal using the log futility OR
+scenario1$H1
 
 
 
