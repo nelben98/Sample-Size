@@ -718,7 +718,6 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
     for(lw in 1:n.look){# lw=0; lw=lw+1
         # size
         #cat(.p("look:",lw,"\n"))
-        
         INLA_fail = FALSE # set a new variable to explore whether the INLA connection failed or not
         fit =NA
         
@@ -851,15 +850,16 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
                                                                     c("0.025quant","mean","0.975quant")]
         }        
         # stop trial due to no active parameters or last look
-        all.stop = (eff.stop|fut.stop)|
-            all(!id.target$active)| 
-            lw==n.look        
+        all.stop = (eff.stop|fut.stop)| all(!id.target$active)| lw==n.look        
+
         if(all.stop){
             if(any(id.target$active)){
                 aw = which(id.target$active)
                 id.target$look[aw]     = lw
+                if (INLA_fail==TRUE){id.target[aw,c("low","mid","high")] = c('NA','NA','NA')
+                                    message('Error in the whole running')} else{
                 id.target[aw,c("low","mid","high")] = fit$summary.fixed[id.target$id[aw],
-                                                                        c("0.025quant","mean","0.975quant")]
+                                                                        c("0.025quant","mean","0.975quant")]}
             }
             break
             # continue
