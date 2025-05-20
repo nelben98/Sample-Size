@@ -652,8 +652,9 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
         # n doesn't make sense to be used - as rmultinom is high dimensional so will not work as rbinom
         # and therefore feeding the number of rows substitutes the n=m
         X <-  model.matrix(model[-2], data = data) #data.matrix(qdapTools::mtabulate(as.data.frame(t(data))))
-        unlisted_beta <- matrix(unlist(beta), ncol = 2, byrow = TRUE)
+        unlisted_beta <- matrix(unlist(unlist(beta)), ncol = 2, byrow = FALSE)
         XB = X%*%t(unlisted_beta)
+        print(unlisted_beta)
         assign("mu",switch(link,
                            "identity" = XB),envir=env) # only one type of link function
         
@@ -742,7 +743,10 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
                             ,dots)
                             )
                     ,silent = TRUE)
-            if (grepl('Error',fit[1])) INLA_fail=TRUE
+            if (grepl('Error',fit[1])) {
+                if (map_probabilities){print(glue::glue('Missing category {c(1:10)[!names(summary(factor(data$y))) %in% c(1:10)]}'))}
+                INLA_fail=TRUE 
+                }
         }
         #cat("E")           
         # posteriors, efficacy and futility
