@@ -10,11 +10,10 @@
 #######################################################
 
 # Multinomial function - bespoke to get the value on 30 days
-# Information i need - 
-# samp_n - is set by the m (ie how many individuals) - obtained by rows in prob_dist
 # prob_dist - is set by the beta - so need to fit a list
-# as no prob_dist - also not num_dist
-
+# Size - Number of subjects to be randomize (since it's one observation per subject, and n-subjects is captured in the size of prob_dist) set to =1
+    # Information needed for obtaining random samples- 
+    # samp_n - is set by the m (ie how many individuals) - [obtained by rows in prob_dist]
 
 multinomial_random <- 
     function(prob_dist,
@@ -31,6 +30,19 @@ multinomial_random <-
         
         return(c(matrix(apply(sapp_prob, 1,function(x)which( x==1)))))
     }
+
+
+
+#######################################################
+#######################################################
+#######################################################
+#######################################################
+
+# BATTS GLM FUNCTION - Modified for the POM analysis:
+# Input - as the usual batts.glm, with the addition of map_probabilities 
+#   map_probabilities - true/false: defines if the probabilities are mapped to less categories (algo converges)
+# 
+# Output - the same as original.
 
 batss.glm.pom = function(
         model,var,var.control=NULL,family="gaussian",link="identity",
@@ -517,15 +529,16 @@ batss.glm.pom = function(
 
 
 
-
-
-
-
-
 #######################################################
 #######################################################
 #######################################################
 #######################################################
+
+# BATSS trial -POM
+# Same as the original batts.trial - with a few changes on:
+#       1- How the random sample for subjects is generated if fam = 'POM'
+#       2- adding map probabilities 
+#       3- Adding some extra tests to smooth out some issues in the INLA convergence - and keep iterating
 
 
 batss.trial.pom = function(int,data,model,link,family,beta,prob0,
@@ -583,13 +596,13 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
     XB = X%*%beta
     assign("mu",switch(link,
                        "identity" = XB,
-                       "log" = exp(XB),
-                       "logit" = INLA::inla.link.logit(XB, inverse=TRUE),
-                       "probit" = INLA::inla.link.probit(XB, inverse=TRUE),
-                       "robit" = INLA::inla.link.robit(XB, inverse=TRUE),
-                       "cauchit" = INLA::inla.link.cauchit(XB, inverse=TRUE),
-                       "loglog" = INLA::inla.link.loglog(XB, inverse=TRUE),
-                       "cloglog" = INLA::inla.link.cloglog(XB, inverse=TRUE)),envir=env)
+                       "log"      = exp(XB),
+                       "logit"    = INLA::inla.link.logit(XB, inverse=TRUE),
+                       "probit"   = INLA::inla.link.probit(XB, inverse=TRUE),
+                       "robit"    = INLA::inla.link.robit(XB, inverse=TRUE),
+                       "cauchit"  = INLA::inla.link.cauchit(XB, inverse=TRUE),
+                       "loglog"   = INLA::inla.link.loglog(XB, inverse=TRUE),
+                       "cloglog"  = INLA::inla.link.cloglog(XB, inverse=TRUE)),envir=env)
     
     tmp_nam <- names(var)[1] 
     args_ <- plyr::.(n=m,mu=mu)                                                             # create a quoted(!) list of available 'ingredients' 
@@ -610,7 +623,7 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
         unlisted_beta <- matrix(unlist(beta), ncol = 2, byrow = TRUE)
         XB = X%*%t(unlisted_beta)
         assign("mu",switch(link,
-                           "identity" = XB),envir=env)
+                           "identity" = XB),envir=env) # only one type of link function
         
         tmp_nam <- names(var)[1] 
         args_ <- plyr::.(#n=m, Not select n - as it will generate a SINGLE RMULTINOM per subject - so n=1 (numb subject implicit in number of rows)
@@ -685,15 +698,11 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
         if ("control.family" %in% names(dots)) {
             control.link <- list(control.link=list(model=link))
             dots$control.family <- c(dots$control.family,control.link)
-            # fit = inla(formula=model, data=data, family=family,
-            #           verbose=FALSE,dots)     does nor  work like this
+            
             fit = do.call(INLA::inla,c(list(formula=model, data=data, family=family,
                                             verbose=FALSE),dots))
         } else {
-            # fit = inla(formula=model, data=data, family=family,
-            #            control.family=list(control.link=list(model=link)),
-            #            verbose=FALSE)
-            
+            # Added the try function - will attempt to resolve -if not just save as failed function
             fit = try(
                     do.call(INLA::inla,
                             c(list(formula=model, data=data, family=family,
@@ -739,6 +748,7 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
         # update mx.futility.lt and mx.efficacy.lt
         for(tw in 1:n.target){
             if(aw[tw]){
+                
                 # efficacy
                 assign("posterior",mx.posterior_eff.lt[lw,tw], envir = env)
                 # assign("target",names(id.look[lw,names(temp)])==id.target[tw,"group"],envir = env)
@@ -747,6 +757,7 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
                 } else {
                     mx.efficacy.lt[lw, tw] = R.utils::doCall(eff.arm, args = c(plyr::.(posterior=posterior,n=n,N=N,target=target,ref=ref),eff.arm.control), envir = env)        #call function instead of parsing and evaluating string
                 }
+                
                 # futility
                 if(twodelta || (is.null(eff.arm) && !is.null(fut.arm))){
                     assign("posterior",mx.posterior_fut.lt[lw,tw], envir = env)
@@ -766,16 +777,19 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
         eff.target = apply(mx.efficacy.lt[1:lw,,drop=FALSE],2,any)
         fut.target = apply(mx.futility.lt[1:lw,,drop=FALSE],2,any)
         
-        if (!is.null(eff.arm) & INLA_fail==FALSE) {if(!is.na(eff.target)) eff.stop = eff.target else eff.stop =FALSE#eff.trial(eff.target) 
+        #Futility and Efficacy - Exist / INLA has not failed to converge --> save as true/false to stop study
+        if (!is.null(eff.arm) & INLA_fail==FALSE) {
+            if(!is.na(eff.target)) eff.stop = eff.target else eff.stop =FALSE
         } else if (!is.null(eff.arm) & INLA_fail==TRUE) {eff.stop = FALSE 
         } else if (is.null(eff.arm)) {eff.stop = FALSE }
         
-        if (INLA_fail==FALSE & !is.null(fut.arm)){ if(!is.na(fut.target)) fut.stop =fut.target else fut.stop =FALSE
+        if (INLA_fail==FALSE & !is.null(fut.arm)){ 
+            if(!is.na(fut.target)) fut.stop =fut.target else fut.stop =FALSE
         } else if ( INLA_fail==TRUE & !is.null(fut.arm)){ fut.stop = FALSE
         } else if (is.null(fut.arm)) {fut.stop = FALSE}
         
         #---
-        # efficacy       
+        # efficacy   - Save results in vector to display    
         if(INLA_fail==FALSE & any(mx.efficacy.lt[lw,aw])){
             # identify arms
             ew = which(mx.efficacy.lt[lw,]&aw)
@@ -788,7 +802,7 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
             id.target[ew,c("low","mid","high")] = fit$summary.fixed[id.target$id[ew],
                                                                     c("0.025quant","mean","0.975quant")]
         }
-        # futility
+        # futility   - Save results in vector to display
         if(INLA_fail==FALSE & any(mx.futility.lt[lw,aw])){
             # identify arms
             fw = which(mx.futility.lt[lw,]&aw)
@@ -851,7 +865,8 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
                 if (is.matrix(covar[[ii]])) colnames(covar[[ii]]) <- paste0(tmp_nam,1:dim(covar[[ii]])[2])
             }
             
-            #---
+            #--- Now iterate on the next look - save the extra batch of patients as 'NEW' and add to the 
+            #       previous batch of patients at the interim.
             new = as.data.frame(matrix(NA,id.look[lw+1,"m"],n.var,
                                        dimnames=list(paste0(lw+1,"-",1:id.look[lw+1,"m"]),id.var)))
             
@@ -869,9 +884,8 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
             }
             
             if (family !='pom'){
-                #X = model.matrix(as.formula(paste0("~",strsplit(model,"~")[[1]][2])),data=data)
+                
                 X <- model.matrix(model[-2], data = new)                                            
-                #---
                 XB = X%*%beta[colnames(X)]
                 assign("mu",switch(link,
                                    "identity" = XB,
@@ -895,12 +909,13 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
                 if (tmp_nam %in% names(var.control)) args_ <- c(args_, var.control[[tmp_nam]])          # add extra arguments if provided
                 new[, id.var[1]] = R.utils::doCall(var[[1]], args = args_, envir = env)                # execute in 'env' environment with unused arguments allowed
                 
-                # data
+                # data appending
                 data = rbind(data,new)
             } else if (family =='pom'){
                 # n doesn't make sense to be used - as rmultinom is high dimensional so will not work as rbinom
                 # and therefore feeding the number of rows substitutes the n=m
-                X <- data.matrix(qdapTools::mtabulate(as.data.frame(t(new))))
+                
+                X <- data.matrix(qdapTools::mtabulate(as.data.frame(t(new)))) # if fails try using this  X<-model.matrix(model[-2], data = new)
                 unlisted_beta <- matrix(unlist(beta), ncol = 2, byrow = TRUE)
                 XB = X%*%t(unlisted_beta)
                 assign("mu",switch(link,
@@ -919,22 +934,23 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
                 if (tmp_nam %in% names(var.control)) args_ <- c(args_, var.control[[tmp_nam]])          # add extra arguments if provided
                 
                 new[, id.var[1]] = R.utils::doCall(var[[1]], args = args_, envir = env) -2 # minus two to make the mapping {-1,28}
+            
+                if(map_probabilities){
+                    new[, id.var[1]]<- 
+                        dplyr::case_when(new[, id.var[1]] == -1  ~ 1,
+                                         new[, id.var[1]] ==  0  ~ 2,
+                                         new[, id.var[1]] >=  1  & new[, id.var[1]] <= 9 ~ 3,
+                                         new[, id.var[1]] >=  10 & new[, id.var[1]] <= 13 ~ 4,
+                                         new[, id.var[1]] >=  14 & new[, id.var[1]] <= 17 ~ 5,
+                                         new[, id.var[1]] >=  18 & new[, id.var[1]] <= 19 ~ 6,
+                                         new[, id.var[1]] >=  20 & new[, id.var[1]] <= 21 ~ 7,
+                                         new[, id.var[1]] >=  22 & new[, id.var[1]] <= 23 ~ 8,
+                                         new[, id.var[1]] >=  24 & new[, id.var[1]] <= 26 ~ 9,
+                                         new[, id.var[1]] >=  27 ~ 10)
+                }
+                # data appending
+                data = rbind(data,new)
             }
-            if(map_probabilities){
-                new[, id.var[1]]<- 
-                    dplyr::case_when(new[, id.var[1]] == -1  ~ 1,
-                                     new[, id.var[1]] ==  0  ~ 2,
-                                     new[, id.var[1]] >=  1  & new[, id.var[1]] <= 9 ~ 3,
-                                     new[, id.var[1]] >=  10 & new[, id.var[1]] <= 13 ~ 4,
-                                     new[, id.var[1]] >=  14 & new[, id.var[1]] <= 17 ~ 5,
-                                     new[, id.var[1]] >=  18 & new[, id.var[1]] <= 21 ~ 6,
-                                     #data[, id.var[1]] >=  20 & data[, id.var[1]] <= 21 ~ 7,
-                                     #data[, id.var[1]] >=  22 & data[, id.var[1]] <= 23 ~ 8,
-                                     new[, id.var[1]] >=  22 & new[, id.var[1]] <= 25 ~ 7,
-                                     new[, id.var[1]] >=  25 ~ 8)
-            }
-            # data
-            data = rbind(data,new)
         }# end continue
         #cat(".")
     }# end loop
@@ -956,7 +972,7 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
 ############                                            ############
 ############                                            ############
 ############   -    OTHER NON EXPORTED FUNCTIONS        ############
-############              FROM BATSS                    ############
+############        FROM BATSS  - NO CHANGES ON THESE   ############
 ############                                            ############
 
 
