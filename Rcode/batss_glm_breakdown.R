@@ -31,7 +31,42 @@ multinomial_random <-
         return(c(matrix(apply(sapp_prob, 1,function(x)which( x==1)))))
     }
 
+# function for the allocation (this is the randomisation which should be minimisation but fairly equal to this)
+treatalloc.fun  = function(m,prob){
+    prob = abs(prob)/sum(abs(prob)) 
+    m0.g = floor(prob*m)
+    m0   = sum(m0.g)
+    factor(rep(names(prob),m0.g+rmultinom(1,m-m0,prob)),
+           levels=names(prob))
+}
 
+        # test on m = 60 patients and equal allocation per group
+#table(treatalloc.fun(m=60,prob=c(UC=1,Simvastatin=1,Baricitinib=1)))
+#table(treatalloc.fun(m=61,prob=c(UC=1,Simvastatin=1,Baricitinib=1))) # test on 61, where last patient at random
+
+
+# function For the efficacy check 
+efficacy.arm.fun = function(posterior,b.eff){
+    posterior > b.eff 
+}
+
+# function For the futility check 
+futility.arm.fun = function(posterior,b.fut){
+    posterior < b.fut
+}
+
+# test Efficacy and Test futility
+# efficacy.arm.fun(0.6, b.eff = 0.84) # set > 0.84
+# futility.arm.fun(0.9, b.fut=0.22)  # set < 0.22
+
+# function
+futility.trial.fun = function(fut.target){
+    all(fut.target)
+}
+
+# test 
+# futility.trial.fun(c(B=TRUE,C=TRUE,D=TRUE,E=TRUE,F=TRUE)) # Is any arm futilitydeclared?
+# futility.trial.fun(c(B=TRUE,C=TRUE,D=TRUE,E=TRUE,F=FALSE))
 
 #######################################################
 #######################################################
@@ -1086,3 +1121,6 @@ batss.res.s2 = function(sample,target){
     colnames(out)[1] = ""
     out
 }
+
+
+
