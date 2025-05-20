@@ -654,7 +654,6 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
         X <-  model.matrix(model[-2], data = data) #data.matrix(qdapTools::mtabulate(as.data.frame(t(data))))
         unlisted_beta <- matrix(unlist(unlist(beta)), ncol = 2, byrow = FALSE)
         XB = X%*%t(unlisted_beta)
-        print(unlisted_beta)
         assign("mu",switch(link,
                            "identity" = XB),envir=env) # only one type of link function
         
@@ -1000,7 +999,7 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
     colnames(mx.posterior_eff.lt)  = paste0("pe(",colnames(mx.posterior_eff.lt),")")
     colnames(mx.posterior_fut.lt)  = paste0("pf(",colnames(mx.posterior_fut.lt),")")
     list(target = id.target, look = cbind(id.look,mx.posterior_eff.lt,mx.posterior_fut.lt,mx.rprob.lt),
-         data   = if(extended==2){data}else{NULL})
+         data   = if(extended==2){table(data)}else{NULL})
 }
 
 
