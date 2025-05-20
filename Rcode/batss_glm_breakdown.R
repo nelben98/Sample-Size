@@ -260,7 +260,7 @@ batss.glm.pom = function(
                            id  = colnames(X)[which],
                            alternative = alternative,
                            group = NA, active = TRUE, 
-                           look = NA, efficacy = NA, futility = NA,
+                           look = NA, efficacy = NA, futility = NA, nonconver=NA, # added
                            low = NA, mid = NA, high = NA,
                            row.names =  colnames(X)[which])
     id.target$group = sapply(id.target$id,function(x){
@@ -268,7 +268,6 @@ batss.glm.pom = function(
     })
     id.target = id.target[order(id.target$group),]
     id.target$pos = 1:n.target
-    
     
     # delta vector(s)
     # mw = c(match("delta",names(eff.arm.control)),
@@ -426,7 +425,6 @@ batss.glm.pom = function(
     }else{
         H1 = FALSE
     }
-    
     #############################
     # H0
     #############################
@@ -591,7 +589,6 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
                        #linux.os=linux.os,
                        extended,...){
     # int=2
-    
     # cat(paste0("\t start:",int,"\n"))
     set.seed((n.look+1)*int)  
     
@@ -857,6 +854,7 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
                 aw = which(id.target$active)
                 id.target$look[aw]     = lw
                 if (INLA_fail==TRUE){id.target[aw,c("low","mid","high")] = c('NA','NA','NA')
+                                    id.target$nonconver = TRUE # added
                                     message('Error in the whole running')} else{
                 id.target[aw,c("low","mid","high")] = fit$summary.fixed[id.target$id[aw],
                                                                         c("0.025quant","mean","0.975quant")]}
@@ -1030,22 +1028,26 @@ batss.res.e = function(trial_r,id.target){
 # target per parameter
 batss.res.tp = function(estimate,id.target){
     out = id.target[,c("pos","id","alternative","group")] 
-    out$efficacy = apply(estimate[,"type",,drop=FALSE]==1,1,mean)
-    out$futility = apply(estimate[,"type",,drop=FALSE]==2,1,mean)
-    out$both     = apply(estimate[,"type",,drop=FALSE]==3,1,mean) 
+    out$efficacy   = apply(estimate[,"type",,drop=FALSE]==1,1,mean)
+    out$futility   = apply(estimate[,"type",,drop=FALSE]==2,1,mean)
+    out$both       = apply(estimate[,"type",,drop=FALSE]==3,1,mean) 
+    out$nonconverg = apply(estimate[,"type",,drop=FALSE]==0,1,mean) # added
     colnames(out)[1] = ""    
     out
 }
+
 # target global   
 batss.res.tg = function(estimate,id.target){
     out = data.frame(pos=1:2,id=c("At least one","All"),
-                     alternative="",group="",efficacy=NA,futility=NA,both=NA)
-    out$efficacy[1] = mean(apply(estimate[,"type",,drop=FALSE]==1,3,sum)>0)
-    out$futility[1] = mean(apply(estimate[,"type",,drop=FALSE]==2,3,sum)>0)
-    out$both[1]     = mean(apply(estimate[,"type",,drop=FALSE]==3,3,sum)>0)
-    out$efficacy[2] = mean(apply(estimate[,"type",,drop=FALSE]==1,3,all)>0)
-    out$futility[2] = mean(apply(estimate[,"type",,drop=FALSE]==2,3,all)>0)
-    out$both[2]     = mean(apply(estimate[,"type",,drop=FALSE]==3,3,all)>0)
+                     alternative="",group="",efficacy=NA,futility=NA,both=NA,nonconverg=NA )# added
+    out$nonconverg[1]= mean(apply(estimate[,"type",,drop=FALSE]==0,3,sum)>0)# added
+    out$efficacy[1]  = mean(apply(estimate[,"type",,drop=FALSE]==1,3,sum)>0)
+    out$futility[1]  = mean(apply(estimate[,"type",,drop=FALSE]==2,3,sum)>0)
+    out$both[1]      = mean(apply(estimate[,"type",,drop=FALSE]==3,3,sum)>0)
+    out$nonconverg[2]= mean(apply(estimate[,"type",,drop=FALSE]==0,3,all)>0)# added
+    out$efficacy[2]  = mean(apply(estimate[,"type",,drop=FALSE]==1,3,all)>0)
+    out$futility[2]  = mean(apply(estimate[,"type",,drop=FALSE]==2,3,all)>0)
+    out$both[2]      = mean(apply(estimate[,"type",,drop=FALSE]==3,3,all)>0)
     colnames(out)[1] = ""    
     out
 }  
