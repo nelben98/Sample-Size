@@ -22,13 +22,13 @@
 ########################################################################################################
 
 
-# File title: PANTHER_in_BATSS.R 
+# File title: Simulations_wrapper_PANTHER
 # 
 # Input: N/A
 # 
-# Output: summary information of PANTHER study - tbc if any files saved
+# Output: Output a single table with informaition on eff/fut/non-conv/neither results in many sims
 # 
-# Purpose: Test a trial of PANTHER style to see if can be studied the sample size calculation of the trial.
+# Purpose: Model PANTHER using BATTS and a lot of simulations
 
 
 # ------------------ Author ---------------- Date ---------------- Update:
@@ -43,97 +43,97 @@ library(tidyr)
 library(magrittr)
 library(dplyr)
 library(INLA)
-#  Location of package : "C:/Users/nb221/AppData/Local/R/win-library/4.4"
 
-#######################################################################################################
-################### Study - preloading
-################### Set the Probability file with all info         ####################################
-################### Probability distribution of incidence          ####################################
 
 setwd(paste0(rstudioapi::getSourceEditorContext()$path,"/.."))
-
-
-#  Distributions in columns, each row corresponding to an outcome value.
 primOutDist_panth<- read.csv(paste0(getwd(),"/../","excel_distributions/VFDdistributions_logodds.csv"),header=TRUE) 
-
-
-
-
-
-# Multinomial function - bespoke to get the value on 30 days
-# Information i need - 
-# samp_n - is set by the m (ie how many individuals)
-# prob_dist - is set by the beta - so need to fit a list
-# as no prob_dist - also not num_dist
-
-multinomial_generation <- 
-    function(n = nrow(prob_dist), # default to be nrows of prob dist- if want diferent, specify
-             prob_dist,
-             size){
-        
-        sapp_prob<-t(rmultinom(n=n ,   # m information is in X
-                               size=size,
-                               prob=prob_dist)) 
-        
-        return(c(matrix(apply(sapp_prob, 1,function(x)which( x==1)))))
-    }
-
-# different version - defined in battss_glm_breakdown - not using n (n is number of worst in prob_dist)
-multinomial_generation( n =200,
-                        prob_dist   = primOutDist_panth[,1]
-                       ,size        = 1)
-
-
-
-
-
-#######################################################################################################
-
-# END of setup - Start of the coding of the trial:
-
-# Simulation
-#BATSS using INLA's default normal priors, N(0,1000)
-
-colnames(primOutDist_panth) #select the most appropiate ones
-
-multinom_rand_dset1<- data.frame(primOutDist_panth[,2]) # hyper Control
-multinom_rand_dset2<- data.frame(primOutDist_panth[,15]) # hyper Treatment
-Trials<-7
-
 source(paste0(getwd(),"/batss_glm_breakdown.R"))
-start.time <- Sys.time()
 
-scenario2 = batss.glm.pom(   
+Wrapper<- function(
+        beta_list,
+        model,var,var.control=NULL,family="gaussian",link="identity",
+        which,alternative = "greater",R=1e+4,N,interim,prob0,
+        delta.eff=0,delta.fut=delta.eff, delta.RAR=0,
+        eff.arm,eff.arm.control=NULL,
+        eff.trial=NULL,eff.trial.control=NULL,
+        fut.arm,fut.arm.control=NULL,
+        fut.trial=NULL,fut.trial.control=NULL,
+        RAR=NULL,RAR.control=NULL,
+        H0=TRUE,
+        computation="parallel",
+        mc.cores=getOption("mc.cores", 3L),
+        map_probabilities =FALSE,
+        #linux.os = NA,
+        extended=0, ...){
+    
+    data <- list()
+    summary<-as.data.frame(matrix(NA,length(beta_list)-1,4,
+                                  dimnames=list(paste0(colnames(beta_list[,-1])),
+                                                c('Efficacy','Futility','Unresolved','Non-convergence'))))
+    
+    pb <- txtProgressBar(min = 2, max = length(beta_list), style = 3) 
+    
+    for (i in 2:length(beta_list)){
+        
+        beta_baseline<-beta_list[1]
+        beta<-list(beta_baseline,# this is the control - always
+                   beta_list[i]  # this is the treatment - changes by iteration
+                )
+        glm_pom_run<-batss.glm.pom( model=model,var=var,var.control=var.control,family=family,link=link,
+                                    beta=beta,which,alternative ,R=R,N=N,interim,prob0,
+                                    delta.eff,delta.fut, delta.RAR,
+                                    eff.arm,eff.arm.control,
+                                    eff.trial,eff.trial.control,
+                                    fut.arm,fut.arm.control,
+                                    fut.trial,fut.trial.control,
+                                    RAR,RAR.control,
+                                    H0,computation,
+                                    mc.cores,
+                                    map_probabilities,
+                                    #seed_wrapper=i,
+                                    extended)#), ...)
+        
+        data[[i-1]]<-matrix(glm_pom_run$H1$estimate, ncol = 3, byrow = TRUE,
+                          dimnames=list(paste0('Trial-',colnames(beta_list[i]),'-',1:R),
+                                        c('Looks','Result','posterior Mode'))) 
+        
+        summary[i-1,1]<-glm_pom_run$H1$target$global$efficacy[2] # efficacy
+        summary[i-1,2]<-glm_pom_run$H1$target$global$futility[2] # futility
+        summary[i-1,3]<-1-(glm_pom_run$H1$target$global$futility[2]+glm_pom_run$H1$target$global$efficacy[2]) # unresolved
+        summary[i-1,4]<-glm_pom_run$H1$target$global$nonconverg[2] # issues
+        setTxtProgressBar(pb, i)
+    }
+    close(pb)
+    out <-list(data = data, beta_list =beta_list, summary=summary)
+}
+
+
+beta_0_select<-primOutDist_panth %>% dplyr::select(p_hypo_c, p_hypo_minus10, p_hypo_05, p_hypo_10,
+                                                   p_hypo_20, p_hypo_30, p_hypo_40, p_hypo_50)
+Trials<-2
+
+results_wrap<-Wrapper(   
+    beta_list =beta_0_select,
     model           = y ~ treatment,
     var             = list(y = multinomial_random,
                            treatment = treatalloc.fun),
     var.control     = list(y = list(size= 1)),
     family          = "pom",
     link            = 'identity',
-    beta            = list(multinom_rand_dset1,# this is the control
-                           multinom_rand_dset2 # this is the treatment 
-                           ), 
+    #beta            = list(multinom_rand_dset1,# this is the control
+    #                       multinom_rand_dset2 # this is the treatment 
+    #), 
     which           = c(2),   # Select which groups are treatments
     R               = Trials,
     control.fixed = list(mean = list( treatment = 0), prec = 0.1),
     control.compute=list(dic=TRUE, cpo=TRUE, waic=TRUE, config = TRUE),
-    alternative     = c("greater")
-    , # One or two sided hypothesis
+    alternative     = c("greater"), # One or two sided hypothesis
     map_probabilities = TRUE, # This variable will apply new maps to the days of
-                              # day free support- estimation.
-                             
-        # RAR:
-        # RAR option not used as we have uniform sampling 
-        #   - continuously sample to Max sample size/ Futitility/ Efficacy
-    #RAR             = prob.trippa,
-    #RAR.control     = list("gamma"=3, "eta"=1.4,"nu"=0.1),
-    #delta.RAR       = 0,
     
     prob0           = c("UC"=1,"Simvastatin"=1),#,"Baricitinib"=1),
     N               = 504*2, # Assume the maximum cap of hypoinflammatory is reached
-    interim         = list(recruited=list(m0 = 89*2 #89*3 # Trigger interim at 89 patients per arm
-                                         ,m  = 49*2  # As per the recruitment expected Do interims at 49/ arm
-                                         )),
+    interim         = list(recruited=list(m0 = 89*2    #89*3 # Trigger interim at 89 patients per arm
+                                         ,m  = 49*2)), # As per the recruitment expected Do interims at 49/ arm
     eff.arm         = efficacy.arm.fun, # Efficiency function of posteriors
     delta.eff       = log(1.1), # Select which interims select efficiency beta P(beta > delta.fut)
     eff.arm.control = list(b.eff = 0.84), # select the probability of the posterior > beta  
@@ -150,44 +150,5 @@ scenario2 = batss.glm.pom(
     extended = 2)
 
 
-
-scenario2
-summary(scenario2)
-scenario2$H1
-for (i in 1:40){
-    print(scenario2$H1$trial[[i]]) }
-
-matrix(((scenario2$H1$estimate)), 
-       ncol = 3, 
-       byrow = TRUE)
-
-end.time <- Sys.time()
-time.taken <- end.time - start.time
-time.taken
-
-print(scenario1)
-summary(scenario1)
-plot(scenario1)
-
-scenario1 |> summary()   #pe - maginal using the log efficacy OR // #pf - marginal using the log futility OR
-scenario1$H1$trial[[1]]
-
-scenario1$H1$estimate
-matrix(((scenario1$H1$estimate)), 
-       ncol = 3, 
-       byrow = TRUE) # THIRD COLUMN IS THE OR
-
-means_dist<-exp(mean(matrix(unlist(unlist(scenario1$H1$estimate)), ncol = 3, byrow = TRUE)[,3]))
-hist(exp(matrix(unlist(unlist(scenario1$H1$estimate)), ncol = 3, byrow = TRUE))[,3],breaks=15)
-
-sd(exp(matrix(unlist(unlist(scenario1$H1$estimate)), ncol = 3, byrow = TRUE)[,3]))
-
-
-INLA::inla(OSFD ~  treatment , 
-     family='pom',
-     data = data, 
-     control.fixed = list(mean = list( treat = 0), prec = 0.1),
-     control.compute=list(dic=TRUE, cpo=TRUE, waic=TRUE, config = TRUE))
-
-
-
+results_wrap$data
+results_wrap$summary

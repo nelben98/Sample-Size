@@ -1,82 +1,143 @@
 # generate data
 
+model           = y ~ treatment
+var             = list(y = multinomial_random,
+                       treatment = treatalloc.fun)
+var.control     = list(y = list(size= 1))
+family          = "pom"
+link            = 'identity'
+beta            = list(multinom_rand_dset1,# this is the treatment
+                       multinom_rand_dset2  # this is the control
+                       )
+which           = c(2)
+   # Select which groups are treatments
+R               = Trials
+control.fixed = list(mean = list( treatment = 0), prec = 0.1)
+control.compute=list(dic=TRUE, cpo=TRUE, waic=TRUE, config = TRUE)
+alternative     = c("greater")
+ # One or two sided hypothesis
+map_probabilities = TRUE
+# This variable will apply new maps to the days of
+# day free support- estimation.
+
+# RAR:
+# RAR option not used as we have uniform sampling 
+#   - continuously sample to Max sample size/ Futitility/ Efficacy
+#RAR             = prob.trippa,
+#RAR.control     = list("gamma"=3, "eta"=1.4,"nu"=0.1),
+#delta.RAR       = 0,
+prob0           = c("UC"=1,"Simvastatin"=1) #,"Baricitinib"=1),
+N               = 504*2 # Assume the maximum cap of hypoinflammatory is reached
+interim         = list(recruited=list(m0=89*2 #89*3 # Trigger interim at 89 patients per arm
+                                      ,m = 49*2))  # As per the recruitment expected Do interims at 49/ arm
+eff.arm         = efficacy.arm.fun # Efficiency function of posteriors
+delta.eff       = log(1.1)  # Select which interims select efficiency beta P(beta > delta.fut)
+eff.arm.control = list(b.eff = 0.84)  # select the probability of the posterior > beta  
+fut.arm         = futility.arm.fun
+delta.fut       = log(1.075)  # select the analysed efficiency beta P(beta > delta.fut)
+fut.arm.control = list(b.fut = 1-0.78)  # select the probability of the posterior > beta  
 delta.RAR=0
-N = 504*3
+computation     = "sequential"
+#mc.cores        = parallel::detectCores()-1,
+H0              = FALSE
 
+
+eff.trial=efficacy.arm.fun
+fut.trial=futility.arm.fun
+RAR = NULL
+extended = 1
+delta.RAR=0
+N = 504*2
+
+R=3
     
-    
-if(sum(!is.na(match(c("m0","m"),names(interim.recruited))))==2){
-    size_look = seq(interim.recruited$m0,N,interim.recruited$m)  
-    size_look[length(size_look)] = N
-}else{
-    interim.recruited <- sort(interim.recruited)        #sort interim recruited to make sure the values are ordered
-    size_look = c(interim.recruited,N)  
-}
-n.look  = length(size_look)   
-
-id.look = data.frame(pos = 1:n.look,
-                     id  = paste0("n=",size_look),
-                     n   = size_look,
-                     m   = c(size_look[1],size_look[-1]-size_look[-n.look]))
-# generate predictors
-env0 = new.env()
-assign("m", id.look$m[1], envir = env0)
-assign("n", id.look$n[1], envir = env0)
-assign("prob",prob0,envir = env0)
-
-assign("var.control", var.control, envir = env0)  
-covar <- vector("list",length(var[-1]))
-for (ii in 1:length(var[-1])) {
-    tmp_nam <- names(var)[ii+1]
-    args_ <- plyr::.(n=n,m=m,prob=prob)
-    if (tmp_nam %in% names(var.control)) args_ <- c(args_, var.control[[tmp_nam]])
-    covar[[ii]] <- R.utils::doCall(var[[ii+1]], envir = env0, args = args_)   #call functions directly
-    if (is.matrix(covar[[ii]])) colnames(covar[[ii]]) <- paste0(tmp_nam,1:dim(covar[[ii]])[2])
-}
-
-n.var <- length(all.vars(model))
-id.var <- names(var)
-if (any(sapply(covar,is.matrix))) {
-    where.mat <- which(sapply(covar,is.matrix))
-    tmp_var <- covar[where.mat]
-    id.var <- names(var)[1]
-    for (ii in 1:length(covar)) {
-        if (ii %in% (where.mat)) {
-            id.var <- c(id.var,colnames(covar[[ii]]))
-        } else {
-            id.var <- c(id.var,names(var[ii+1]))
-        }
-    }
-}
-
-m0     = length(covar[[1]])
-if(length(m0)>1|m0[1]!=id.look$m[1]){stop("different predictor length")}
-
-data <- as.data.frame(matrix(NA,m0,n.var,
-                             dimnames=list(paste0("1-",1:m0),id.var)))
-pos.col <- 2
-for (var.count in 1:(length(var)-1)){
-    if (!is.matrix(covar[[var.count]])) {
-        data[,pos.col] = covar[[var.count]]
-        pos.col <- pos.col+1
-    } else {
-        for (jj in 1:dim(covar[[var.count]])[2]) {
-            data[,pos.col] = covar[[var.count]][,jj]
-            pos.col <- pos.col+1
-        }
-    }
-}
 #
 #
-#
-#
-
-
+seed_setting=10
+lapply(R,
+       batss.trial.pom,
+       data=data,
+       seed_setting=seed_setting,
+       model=model,
+       link=link,
+       family=family,
+       beta=beta,
+       RAR=RAR,RAR.control=RAR.control,twodelta=twodelta,
+       delta.eff=delta.eff,delta.fut=delta.fut,
+       eff.arm=eff.arm,eff.trial=eff.trial,delta.RAR=delta.RAR,
+       eff.arm.control=eff.arm.control,eff.trial.control=eff.trial.control,
+       fut.arm=fut.arm,fut.trial=fut.trial,
+       fut.arm.control=fut.arm.control,fut.trial.control=fut.trial.control,
+       id.target=id.target,n.target=n.target,
+       id.look=id.look,n.look=n.look,prob0=prob0,
+       id.group=id.group,n.group=n.group,groupvar=groupvar,
+       var=var,var.control=var.control,id.var=id.var,n.var=n.var,
+       #linux.os=linux.os,
+       map_probabilities =map_probabilities,
+       extended = extended)
 #  Now try a dataset until it breaks
 #
 #
+pb <- txtProgressBar(min = 0, max = 1000, style = 3) 
 
-# cat(paste0("\t start:",int,"\n"))
+#data_batts<-data
+for (i in 1:1000){
+    setTxtProgressBar(pb, i-1)
+    POMPOMPOM<-batss.trial.pom(int = i,
+                    data = data_batts,
+                    model = model,
+                    link = 'identity',
+                    family,
+                    beta,
+                    prob0,
+             RAR=NULL,RAR.control=NULL,
+             eff.arm,eff.trial,
+             eff.arm.control,
+             eff.trial.control = NULL,
+             fut.arm,
+             fut.trial,
+             fut.arm.control,
+             fut.trial.control = NULL,
+             id.target,
+             n.target,
+             id.look,
+             n.look,
+             id.group,
+             n.group,
+             groupvar,
+             twodelta,delta.eff,
+             delta.fut,delta.RAR,
+             var,
+             var.control,
+             id.var,
+             n.var,
+             map_probabilities,
+             extended)
+    
+    estimate = batss.res.e(list(POMPOMPOM),id.target)
+    if(estimate[,"type",,drop=FALSE]==0 & is.na(estimate[,"mid",,drop=FALSE])){
+        break
+        close(pb)}
+}
+
+
+tar.p    = batss.res.tp(estimate,id.target)
+
+tar.g    = batss.res.tg(estimate,id.target)
+eff.p    = batss.res.ep(estimate,id.target,n.look)
+eff.g    = batss.res.eg(estimate,id.target,n.look)
+fut.p    = batss.res.fp(estimate,id.target,n.look)
+fut.g    = batss.res.fg(estimate,id.target,n.look)
+#
+##
+###
+####
+#####
+######
+#######
+#######
+data<-data_batts
+
 set.seed((n.look+1)*int)  
 
 # generate data for initial panel
@@ -115,13 +176,13 @@ if (family !='pom'){
     XB = X%*%beta
     assign("mu",switch(link,
                        "identity" = XB,
-                       "log" = exp(XB),
-                       "logit" = INLA::inla.link.logit(XB, inverse=TRUE),
-                       "probit" = INLA::inla.link.probit(XB, inverse=TRUE),
-                       "robit" = INLA::inla.link.robit(XB, inverse=TRUE),
-                       "cauchit" = INLA::inla.link.cauchit(XB, inverse=TRUE),
-                       "loglog" = INLA::inla.link.loglog(XB, inverse=TRUE),
-                       "cloglog" = INLA::inla.link.cloglog(XB, inverse=TRUE)),envir=env)
+                       "log"      = exp(XB),
+                       "logit"    = INLA::inla.link.logit(XB, inverse=TRUE),
+                       "probit"   = INLA::inla.link.probit(XB, inverse=TRUE),
+                       "robit"    = INLA::inla.link.robit(XB, inverse=TRUE),
+                       "cauchit"  = INLA::inla.link.cauchit(XB, inverse=TRUE),
+                       "loglog"   = INLA::inla.link.loglog(XB, inverse=TRUE),
+                       "cloglog"  = INLA::inla.link.cloglog(XB, inverse=TRUE)),envir=env)
     
     tmp_nam <- names(var)[1] 
     args_ <- plyr::.(n=m,mu=mu)                                                             # create a quoted(!) list of available 'ingredients' 
@@ -142,7 +203,7 @@ if (family !='pom'){
     unlisted_beta <- matrix(unlist(beta), ncol = 2, byrow = TRUE)
     XB = X%*%t(unlisted_beta)
     assign("mu",switch(link,
-                       "identity" = XB),envir=env)
+                       "identity" = XB),envir=env) # only one type of link function
     
     tmp_nam <- names(var)[1] 
     args_ <- plyr::.(#n=m, Not select n - as it will generate a SINGLE RMULTINOM per subject - so n=1 (numb subject implicit in number of rows)
@@ -157,12 +218,12 @@ if (family !='pom'){
     if (tmp_nam %in% names(var.control)) args_ <- c(args_, var.control[[tmp_nam]])          # add extra arguments if provided
     
     data[, id.var[1]] = R.utils::doCall(var[[1]], args = args_, envir = env) -2 # minus two to make the mapping {-1,28}
-
+    
     if(map_probabilities){
         data[, id.var[1]]<- 
             dplyr::case_when(data[, id.var[1]] == -1  ~ 1,
-                             data[, id.var[1]] ==  0  ~ 2,
-                             data[, id.var[1]] >=  1  & data[, id.var[1]] <= 9 ~ 3,
+                             data[, id.var[1]] >=  0  & data[, id.var[1]] <= 2  ~ 2,
+                             data[, id.var[1]] >=  3  & data[, id.var[1]] <= 9 ~ 3,
                              data[, id.var[1]] >=  10 & data[, id.var[1]] <= 13 ~ 4,
                              data[, id.var[1]] >=  14 & data[, id.var[1]] <= 17 ~ 5,
                              data[, id.var[1]] >=  18 & data[, id.var[1]] <= 19 ~ 6,
@@ -174,22 +235,25 @@ if (family !='pom'){
         if(class(data[, id.var[1]]) =='factor'){
             data[, id.var[1]]<-as.numeric(droplevels(as.factor(data[, id.var[1]])))
         }
-        
     }
 }
 
-# open the dots! - INLA function without ... reading
-# 
 
-fit = inla(formula=model, data=data, family=family,
-           control.family=list(control.link=list(model=link)),
-           control.fixed = list(mean = list( treat = 0), prec = 0.1),
-           control.compute=list(dic=TRUE, cpo=TRUE, waic=TRUE, config = TRUE),
-           verbose=FALSE)
-           
+inla(formula=model, 
+     family='pom',
+     data = data, 
+     control.fixed = list(mean = list( treat = 0), prec = 0.1),
+     verbose=TRUE,
+     control.compute=list(dic=TRUE, cpo=TRUE, waic=TRUE, config = TRUE))
 
-fit_null<-NULL
-
+#
+##
+###
+####
+#####
+######
+#######
+#######
 
 #### Example with code from 'Ed_Code_Bayesian_seqdes.R'
 # master[[g]][[p]][[i]]
@@ -206,13 +270,27 @@ inla(OSFD2 ~  treat ,
      control.compute=list(dic=TRUE, cpo=TRUE, waic=TRUE, config = TRUE))
 
 
-
-?control.compute
-
-
-
-model           = y ~ treatment
+model = y ~ treatment
 
 X <- data.matrix(qdapTools::mtabulate(as.data.frame(t(data))))
 model.matrix(model[-2], data = (qdapTools::mtabulate(as.data.frame(t(data)))))      
 
+
+######################################    INVESTIGATE WHICH ONE IS BETTER WITH CODE
+#
+#
+#
+
+
+fit_hypo <-fit # fit_hypo statistic as per Ed's code
+
+fit_hypo$marginals.fixed$treat	
+summary(fit_hypo)$fixed[2,1] # mean
+summary(fit_hypo)$fixed[2,2] # Sd
+inla.pmarginal(log(efficacyOR),fit_hypo$marginals.fixed$treat)>=efficacyPThresh
+inla.pmarginal(log(futilityOR),fit_hypo$marginals.fixed$treat)>=futilityPThresh
+
+
+plot(fit_hypo$marginals.fixed$treat[,1]  ,fit_hypo$marginals.fixed$treat[,2])+ abline(v=log(1.1),col='green') + abline(v=log(1.075),col='red')
+
+plot(fit_hypo$marginals.fixed$`(Intercept`[,1]  ,fit_hypo$marginals.fixed$`(Intercept`[,2])
