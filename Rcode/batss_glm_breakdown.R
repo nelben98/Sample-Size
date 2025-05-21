@@ -325,8 +325,8 @@ batss.glm.pom = function(
     
     # seeds
     
-    if(!is.null(seed_wrapper)){id.seed=(seed_wrapper+1)*R}else{
-        if(length(R)==1){id.seed=1:R}else{id.seed=R}    
+    if(!is.null(seed_wrapper)){seed_setting=(seed_wrapper*R)}else{
+        if(length(R)==1){seed_setting=1:R}else{seed_setting=R}    
     }
     #############################
     # H1
@@ -340,9 +340,10 @@ batss.glm.pom = function(
         # 
         # 
         if(computation!="parallel"){
-            trial_r = lapply(id.seed,
+            trial_r = lapply(R,
                              batss.trial.pom,
                              data=data,
+                             seed_setting=seed_setting,
                              model=model,
                              link=link,
                              family=family,
@@ -366,8 +367,9 @@ batss.glm.pom = function(
         }else{if(computation=="parallel"){           
             # unix via forking
             if(Sys.info()[[1]]!="Windows"){
-                trial_r = parallel::mclapply(id.seed,batss.trial.pom,
-                                             data=data,model=model,link=link,family=family,beta=beta,
+                trial_r = parallel::mclapply(R,batss.trial.pom,
+                                             data=data,
+                                             seed_setting=seed_setting,model=model,link=link,family=family,beta=beta,
                                              RAR=RAR,RAR.control=RAR.control,twodelta=twodelta,delta.eff=delta.eff,delta.fut=delta.fut,
                                              eff.arm=eff.arm,eff.trial=eff.trial,delta.RAR=delta.RAR,
                                              eff.arm.control=eff.arm.control,eff.trial.control=eff.trial.control,
@@ -386,8 +388,9 @@ batss.glm.pom = function(
                 parallel::clusterEvalQ(cl, c(library(INLA)))
                 #parallel::clusterExport(cl, transfer, envir = .GlobalEnv)           
                 #        parallel::clusterExport(cl, c(".expit"), envir = environment())           
-                trial_r = parallel::parLapply(cl=cl,id.seed,batss.trial.pom,
-                                              data=data,model=model,link=link,family=family,beta=beta,
+                trial_r = parallel::parLapply(cl=cl,R,batss.trial.pom,
+                                              data=data,
+                                              seed_setting=seed_setting,model=model,link=link,family=family,beta=beta,
                                               RAR=RAR,RAR.control=RAR.control,twodelta=twodelta,delta.eff=delta.eff,delta.fut=delta.fut,
                                               eff.arm=eff.arm,eff.trial=eff.trial,delta.RAR=delta.RAR,
                                               eff.arm.control=eff.arm.control,eff.trial.control=eff.trial.control,
@@ -442,8 +445,9 @@ batss.glm.pom = function(
         # 
         # 
         if(computation!="parallel"){
-            trial_r = lapply(id.seed,batss.trial.pom,
-                             data=data,model=model,link=link,family=family,beta=beta0,
+            trial_r = lapply(R,batss.trial.pom,
+                             data=data,
+                             seed_setting=seed_setting,model=model,link=link,family=family,beta=beta0,
                              RAR=RAR,RAR.control=RAR.control,twodelta=twodelta,delta.eff=delta.eff,delta.fut=delta.fut,
                              eff.arm=eff.arm,eff.trial=eff.trial,delta.RAR=delta.RAR,
                              eff.arm.control=eff.arm.control,eff.trial.control=eff.trial.control,
@@ -461,8 +465,9 @@ batss.glm.pom = function(
         }else{if(computation=="parallel"){           
             # unix via forking
             if(Sys.info()[[1]]!="Windows"){
-                trial_r = parallel::mclapply(id.seed,batss.trial.pom,
-                                             data=data,model=model,link=link,family=family,beta=beta0,
+                trial_r = parallel::mclapply(R,batss.trial.pom,
+                                             data=data,
+                                             seed_setting=seed_setting,model=model,link=link,family=family,beta=beta0,
                                              RAR=RAR,RAR.control=RAR.control,twodelta=twodelta,delta.eff=delta.eff,delta.fut=delta.fut,
                                              eff.arm=eff.arm,eff.trial=eff.trial,delta.RAR=delta.RAR,
                                              eff.arm.control=eff.arm.control,eff.trial.control=eff.trial.control,
@@ -482,8 +487,9 @@ batss.glm.pom = function(
                 parallel::clusterEvalQ(cl, c(library(INLA)))
                 #parallel::clusterExport(cl, transfer, envir = .GlobalEnv)           
                 #        parallel::clusterExport(cl, c(".expit"), envir = environment())           
-                trial_r = parallel::parLapply(cl=cl,id.seed,batss.trial.pom,
-                                              data=data,model=model,link=link,family=family,beta=beta0,
+                trial_r = parallel::parLapply(cl=cl,R,batss.trial.pom,
+                                              data=data,
+                                              seed_setting=seed_setting,model=model,link=link,family=family,beta=beta0,
                                               RAR=RAR,RAR.control=RAR.control,twodelta=twodelta,delta.eff=delta.eff,delta.fut=delta.fut,
                                               eff.arm=eff.arm,eff.trial=eff.trial,delta.RAR=delta.RAR,
                                               eff.arm.control=eff.arm.control,eff.trial.control=eff.trial.control,
@@ -577,7 +583,7 @@ batss.glm.pom = function(
 #       3- Adding some extra tests to smooth out some issues in the INLA convergence - and keep iterating
 
 
-batss.trial.pom = function(int,data,model,link,family,beta,prob0,
+batss.trial.pom = function(int,data,seed_setting,model,link,family,beta,prob0,
                        RAR,RAR.control,
                        eff.arm,eff.trial,
                        eff.arm.control,eff.trial.control,
@@ -593,7 +599,7 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
                        extended,...){
     # int=2
     # cat(paste0("\t start:",int,"\n"))
-    set.seed((n.look+1)*int)  
+    set.seed((n.look+1)*seed_setting)  
 
     # generate data for initial panel
     n = m = N = prob = ref = target = ref = active = mu = posterior = NULL
