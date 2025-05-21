@@ -92,6 +92,7 @@ batss.glm.pom = function(
         mc.cores=getOption("mc.cores", 3L),
         map_probabilities =FALSE,
         #linux.os = NA,
+        seed_set=1,
         extended=0, ...){
     
     #---    
@@ -323,8 +324,9 @@ batss.glm.pom = function(
     }
     
     # seeds
-    if(length(R)==1){id.seed=1:R}else{id.seed=R}    
-    
+     
+    if(length(R)==1){id.seed=(1:R)+ R*(seed_set-1)}else{id.seed=R}    
+    message(glue::glue('{id.seed}'))
     #############################
     # H1
     #############################

@@ -79,7 +79,8 @@ Wrapper<- function(
         beta<-list(beta_baseline,# this is the control - always
                    beta_list[i]  # this is the treatment - changes by iteration
                 )
-        glm_pom_run<-batss.glm.pom( model=model,var=var,var.control=var.control,family=family,link=link,
+        glm_pom_run<-batss.glm.pom( seed_set= i,
+                                    model=model,var=var,var.control=var.control,family=family,link=link,
                                     beta=beta,which,alternative ,R=R,N=N,interim,prob0,
                                     delta.eff,delta.fut, delta.RAR,
                                     eff.arm,eff.arm.control,
