@@ -45,7 +45,7 @@ treatalloc.fun  = function(m,prob){
 #table(treatalloc.fun(m=61,prob=c(UC=1,Simvastatin=1,Baricitinib=1))) # test on 61, where last patient at random
 
 
-# function For the efficacy check 
+# function For the efficacy check - this had been changed from 'posterior> 1-beta' to 'posterior >beta'
 efficacy.arm.fun = function(posterior,b.eff){
     posterior > b.eff 
 }
