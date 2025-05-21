@@ -92,6 +92,7 @@ batss.glm.pom = function(
         mc.cores=getOption("mc.cores", 3L),
         map_probabilities =FALSE,
         #linux.os = NA,
+        seed_wrapper=NULL,
         extended=0, ...){
     
     #---    
@@ -323,8 +324,10 @@ batss.glm.pom = function(
     }
     
     # seeds
-    if(length(R)==1){id.seed=1:R}else{id.seed=R}    
     
+    if(!is.null(seed_wrapper)){id.seed=(seed_wrapper+1)*R}else{
+        if(length(R)==1){id.seed=1:R}else{id.seed=R}    
+    }
     #############################
     # H1
     #############################
@@ -591,7 +594,7 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
     # int=2
     # cat(paste0("\t start:",int,"\n"))
     set.seed((n.look+1)*int)  
-    
+
     # generate data for initial panel
     n = m = N = prob = ref = target = ref = active = mu = posterior = NULL
     env = new.env()
@@ -743,7 +746,7 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
                             )
                     ,silent = TRUE)
             if (grepl('Error',fit[1])) {
-                if (map_probabilities){print(glue::glue('Missing category {c(1:10)[!names(summary(factor(data$y))) %in% c(1:10)]}'))}
+                if (map_probabilities){
                 INLA_fail=TRUE 
                 }
         }
@@ -989,7 +992,7 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
             }
         }# end continue
         #cat(".")
-    }# end loop
+    }}# end loop
     
     # output
     # cat(paste0("\t end:",int,"\n"))
@@ -1034,7 +1037,7 @@ batss.res.tp = function(estimate,id.target){
     out$efficacy   = apply(estimate[,"type",,drop=FALSE]==1,1,mean)
     out$futility   = apply(estimate[,"type",,drop=FALSE]==2,1,mean)
     out$both       = apply(estimate[,"type",,drop=FALSE]==3,1,mean) 
-    out$nonconverg = apply(estimate[,"type",,drop=FALSE]==0,1,mean) # added
+    out$nonconverg = apply(estimate[,"type",,drop=FALSE]==0 & is.na(estimate[,"mid",,drop=FALSE]),1,mean) # added
     colnames(out)[1] = ""    
     out
 }
@@ -1043,11 +1046,11 @@ batss.res.tp = function(estimate,id.target){
 batss.res.tg = function(estimate,id.target){
     out = data.frame(pos=1:2,id=c("At least one","All"),
                      alternative="",group="",efficacy=NA,futility=NA,both=NA,nonconverg=NA )# added
-    out$nonconverg[1]= mean(apply(estimate[,"type",,drop=FALSE]==0,3,sum)>0)# added
+    out$nonconverg[1]= mean(apply(estimate[,"type",,drop=FALSE]==0 & is.na(estimate[,"mid",,drop=FALSE]),3,sum)>0)# added
     out$efficacy[1]  = mean(apply(estimate[,"type",,drop=FALSE]==1,3,sum)>0)
     out$futility[1]  = mean(apply(estimate[,"type",,drop=FALSE]==2,3,sum)>0)
     out$both[1]      = mean(apply(estimate[,"type",,drop=FALSE]==3,3,sum)>0)
-    out$nonconverg[2]= mean(apply(estimate[,"type",,drop=FALSE]==0,3,all)>0)# added
+    out$nonconverg[2]= mean(apply(estimate[,"type",,drop=FALSE]==0 & is.na(estimate[,"mid",,drop=FALSE]),3,all)>0)# added
     out$efficacy[2]  = mean(apply(estimate[,"type",,drop=FALSE]==1,3,all)>0)
     out$futility[2]  = mean(apply(estimate[,"type",,drop=FALSE]==2,3,all)>0)
     out$both[2]      = mean(apply(estimate[,"type",,drop=FALSE]==3,3,all)>0)
