@@ -12,8 +12,8 @@
 # Multinomial function - bespoke to get the value on 30 days
 # prob_dist - is set by the beta - so need to fit a list
 # Size - Number of subjects to be randomize (since it's one observation per subject, and n-subjects is captured in the size of prob_dist) set to =1
-    # Information needed for obtaining random samples- 
-    # samp_n - is set by the m (ie how many individuals) - [obtained by rows in prob_dist]
+# Information needed for obtaining random samples- 
+# samp_n - is set by the m (ie how many individuals) - [obtained by rows in prob_dist]
 
 multinomial_random <- 
     function(prob_dist,
@@ -40,7 +40,7 @@ treatalloc.fun  = function(m,prob){
            levels=names(prob))
 }
 
-        # test on m = 60 patients and equal allocation per group
+# test on m = 60 patients and equal allocation per group
 #table(treatalloc.fun(m=60,prob=c(UC=1,Simvastatin=1,Baricitinib=1)))
 #table(treatalloc.fun(m=61,prob=c(UC=1,Simvastatin=1,Baricitinib=1))) # test on 61, where last patient at random
 
@@ -92,7 +92,6 @@ batss.glm.pom = function(
         mc.cores=getOption("mc.cores", 3L),
         map_probabilities =FALSE,
         #linux.os = NA,
-        seed_wrapper=NULL,
         extended=0, ...){
     
     #---    
@@ -324,10 +323,8 @@ batss.glm.pom = function(
     }
     
     # seeds
+    if(length(R)==1){id.seed=1:R}else{id.seed=R}    
     
-    if(!is.null(seed_wrapper)){seed_setting=(seed_wrapper*R)}else{
-        if(length(R)==1){seed_setting=1:R}else{seed_setting=R}    
-    }
     #############################
     # H1
     #############################
@@ -340,10 +337,9 @@ batss.glm.pom = function(
         # 
         # 
         if(computation!="parallel"){
-            trial_r = lapply(R,
+            trial_r = lapply(id.seed,
                              batss.trial.pom,
                              data=data,
-                             seed_setting=seed_setting,
                              model=model,
                              link=link,
                              family=family,
@@ -367,9 +363,8 @@ batss.glm.pom = function(
         }else{if(computation=="parallel"){           
             # unix via forking
             if(Sys.info()[[1]]!="Windows"){
-                trial_r = parallel::mclapply(R,batss.trial.pom,
-                                             data=data,
-                                             seed_setting=seed_setting,model=model,link=link,family=family,beta=beta,
+                trial_r = parallel::mclapply(id.seed,batss.trial.pom,
+                                             data=data,model=model,link=link,family=family,beta=beta,
                                              RAR=RAR,RAR.control=RAR.control,twodelta=twodelta,delta.eff=delta.eff,delta.fut=delta.fut,
                                              eff.arm=eff.arm,eff.trial=eff.trial,delta.RAR=delta.RAR,
                                              eff.arm.control=eff.arm.control,eff.trial.control=eff.trial.control,
@@ -388,9 +383,8 @@ batss.glm.pom = function(
                 parallel::clusterEvalQ(cl, c(library(INLA)))
                 #parallel::clusterExport(cl, transfer, envir = .GlobalEnv)           
                 #        parallel::clusterExport(cl, c(".expit"), envir = environment())           
-                trial_r = parallel::parLapply(cl=cl,R,batss.trial.pom,
-                                              data=data,
-                                              seed_setting=seed_setting,model=model,link=link,family=family,beta=beta,
+                trial_r = parallel::parLapply(cl=cl,id.seed,batss.trial.pom,
+                                              data=data,model=model,link=link,family=family,beta=beta,
                                               RAR=RAR,RAR.control=RAR.control,twodelta=twodelta,delta.eff=delta.eff,delta.fut=delta.fut,
                                               eff.arm=eff.arm,eff.trial=eff.trial,delta.RAR=delta.RAR,
                                               eff.arm.control=eff.arm.control,eff.trial.control=eff.trial.control,
@@ -445,9 +439,8 @@ batss.glm.pom = function(
         # 
         # 
         if(computation!="parallel"){
-            trial_r = lapply(R,batss.trial.pom,
-                             data=data,
-                             seed_setting=seed_setting,model=model,link=link,family=family,beta=beta0,
+            trial_r = lapply(id.seed,batss.trial.pom,
+                             data=data,model=model,link=link,family=family,beta=beta0,
                              RAR=RAR,RAR.control=RAR.control,twodelta=twodelta,delta.eff=delta.eff,delta.fut=delta.fut,
                              eff.arm=eff.arm,eff.trial=eff.trial,delta.RAR=delta.RAR,
                              eff.arm.control=eff.arm.control,eff.trial.control=eff.trial.control,
@@ -465,9 +458,8 @@ batss.glm.pom = function(
         }else{if(computation=="parallel"){           
             # unix via forking
             if(Sys.info()[[1]]!="Windows"){
-                trial_r = parallel::mclapply(R,batss.trial.pom,
-                                             data=data,
-                                             seed_setting=seed_setting,model=model,link=link,family=family,beta=beta0,
+                trial_r = parallel::mclapply(id.seed,batss.trial.pom,
+                                             data=data,model=model,link=link,family=family,beta=beta0,
                                              RAR=RAR,RAR.control=RAR.control,twodelta=twodelta,delta.eff=delta.eff,delta.fut=delta.fut,
                                              eff.arm=eff.arm,eff.trial=eff.trial,delta.RAR=delta.RAR,
                                              eff.arm.control=eff.arm.control,eff.trial.control=eff.trial.control,
@@ -487,9 +479,8 @@ batss.glm.pom = function(
                 parallel::clusterEvalQ(cl, c(library(INLA)))
                 #parallel::clusterExport(cl, transfer, envir = .GlobalEnv)           
                 #        parallel::clusterExport(cl, c(".expit"), envir = environment())           
-                trial_r = parallel::parLapply(cl=cl,R,batss.trial.pom,
-                                              data=data,
-                                              seed_setting=seed_setting,model=model,link=link,family=family,beta=beta0,
+                trial_r = parallel::parLapply(cl=cl,id.seed,batss.trial.pom,
+                                              data=data,model=model,link=link,family=family,beta=beta0,
                                               RAR=RAR,RAR.control=RAR.control,twodelta=twodelta,delta.eff=delta.eff,delta.fut=delta.fut,
                                               eff.arm=eff.arm,eff.trial=eff.trial,delta.RAR=delta.RAR,
                                               eff.arm.control=eff.arm.control,eff.trial.control=eff.trial.control,
@@ -583,24 +574,25 @@ batss.glm.pom = function(
 #       3- Adding some extra tests to smooth out some issues in the INLA convergence - and keep iterating
 
 
-batss.trial.pom = function(int,data,seed_setting,model,link,family,beta,prob0,
-                       RAR,RAR.control,
-                       eff.arm,eff.trial,
-                       eff.arm.control,eff.trial.control,
-                       fut.arm,fut.trial,
-                       fut.arm.control,fut.trial.control,
-                       id.target,n.target,
-                       id.look,n.look,
-                       id.group,n.group,groupvar,
-                       twodelta,delta.eff,delta.fut,delta.RAR,
-                       var,var.control,id.var,n.var,
-                       map_probabilities,
-                       #linux.os=linux.os,
-                       extended,...){
+batss.trial.pom = function(int,data,model,link,family,beta,prob0,
+                           RAR,RAR.control,
+                           eff.arm,eff.trial,
+                           eff.arm.control,eff.trial.control,
+                           fut.arm,fut.trial,
+                           fut.arm.control,fut.trial.control,
+                           id.target,n.target,
+                           id.look,n.look,
+                           id.group,n.group,groupvar,
+                           twodelta,delta.eff,delta.fut,delta.RAR,
+                           var,var.control,id.var,n.var,
+                           map_probabilities,
+                           #linux.os=linux.os,
+                           extended,...){
     # int=2
     # cat(paste0("\t start:",int,"\n"))
-    set.seed((n.look+1)*seed_setting)  
-
+    set.seed((n.look+1)*int)  
+    
+    
     # generate data for initial panel
     n = m = N = prob = ref = target = ref = active = mu = posterior = NULL
     env = new.env()
@@ -631,32 +623,32 @@ batss.trial.pom = function(int,data,seed_setting,model,link,family,beta,prob0,
         } 
     }
     if (family !='pom'){
-    #X = model.matrix(as.formula(paste0("~",strsplit(model,"~")[[1]][2])),data=data)
-    X <- model.matrix(model[-2], data = data)                                            
-    #---
-    XB = X%*%beta
-    assign("mu",switch(link,
-                       "identity" = XB,
-                       "log"      = exp(XB),
-                       "logit"    = INLA::inla.link.logit(XB, inverse=TRUE),
-                       "probit"   = INLA::inla.link.probit(XB, inverse=TRUE),
-                       "robit"    = INLA::inla.link.robit(XB, inverse=TRUE),
-                       "cauchit"  = INLA::inla.link.cauchit(XB, inverse=TRUE),
-                       "loglog"   = INLA::inla.link.loglog(XB, inverse=TRUE),
-                       "cloglog"  = INLA::inla.link.cloglog(XB, inverse=TRUE)),envir=env)
-    
-    tmp_nam <- names(var)[1] 
-    args_ <- plyr::.(n=m,mu=mu)                                                             # create a quoted(!) list of available 'ingredients' 
-    if (!(identical(var[[1]],rbinom) || identical(var[[1]],rnbinom))) {
-        names(args_)[1:2] <- formalArgs(var[[1]])[1:2]  
-    } else {
-        if (identical(var[[1]],rbinom)) {
-            names(args_)[1:2] <- c("n","prob")
-        }
-    }                                                                                       # rename the list objects to the names required by specified formula (NOTE: the order of the items is set, if a function requires a different order this will not work, clever rearranging may be needed)
-    if (tmp_nam %in% names(var.control)) args_ <- c(args_, var.control[[tmp_nam]])          # add extra arguments if provided
-    data[, id.var[1]] = R.utils::doCall(var[[1]], args = args_, envir = env)                # execute in 'env' environment with unused arguments allowed
-    
+        #X = model.matrix(as.formula(paste0("~",strsplit(model,"~")[[1]][2])),data=data)
+        X <- model.matrix(model[-2], data = data)                                            
+        #---
+        XB = X%*%beta
+        assign("mu",switch(link,
+                           "identity" = XB,
+                           "log"      = exp(XB),
+                           "logit"    = INLA::inla.link.logit(XB, inverse=TRUE),
+                           "probit"   = INLA::inla.link.probit(XB, inverse=TRUE),
+                           "robit"    = INLA::inla.link.robit(XB, inverse=TRUE),
+                           "cauchit"  = INLA::inla.link.cauchit(XB, inverse=TRUE),
+                           "loglog"   = INLA::inla.link.loglog(XB, inverse=TRUE),
+                           "cloglog"  = INLA::inla.link.cloglog(XB, inverse=TRUE)),envir=env)
+        
+        tmp_nam <- names(var)[1] 
+        args_ <- plyr::.(n=m,mu=mu)                                                             # create a quoted(!) list of available 'ingredients' 
+        if (!(identical(var[[1]],rbinom) || identical(var[[1]],rnbinom))) {
+            names(args_)[1:2] <- formalArgs(var[[1]])[1:2]  
+        } else {
+            if (identical(var[[1]],rbinom)) {
+                names(args_)[1:2] <- c("n","prob")
+            }
+        }                                                                                       # rename the list objects to the names required by specified formula (NOTE: the order of the items is set, if a function requires a different order this will not work, clever rearranging may be needed)
+        if (tmp_nam %in% names(var.control)) args_ <- c(args_, var.control[[tmp_nam]])          # add extra arguments if provided
+        data[, id.var[1]] = R.utils::doCall(var[[1]], args = args_, envir = env)                # execute in 'env' environment with unused arguments allowed
+        
     } else if (family =='pom'){
         # n doesn't make sense to be used - as rmultinom is high dimensional so will not work as rbinom
         # and therefore feeding the number of rows substitutes the n=m
@@ -668,7 +660,7 @@ batss.trial.pom = function(int,data,seed_setting,model,link,family,beta,prob0,
         
         tmp_nam <- names(var)[1] 
         args_ <- plyr::.(#n=m, Not select n - as it will generate a SINGLE RMULTINOM per subject - so n=1 (numb subject implicit in number of rows)
-                         mu=mu)                                                             # create a quoted(!) list of available 'ingredients' 
+            mu=mu)                                                             # create a quoted(!) list of available 'ingredients' 
         if (!(identical(var[[1]],rbinom) || identical(var[[1]],rnbinom))) {
             names(args_)[1] <- formalArgs(var[[1]])[1]  
         } else {
@@ -677,9 +669,9 @@ batss.trial.pom = function(int,data,seed_setting,model,link,family,beta,prob0,
             }
         }                                                                                       # rename the list objects to the names required by specified formula (NOTE: the order of the items is set, if a function requires a different order this will not work, clever rearranging may be needed)
         if (tmp_nam %in% names(var.control)) args_ <- c(args_, var.control[[tmp_nam]])          # add extra arguments if provided
-       
+        
         data[, id.var[1]] = R.utils::doCall(var[[1]], args = args_, envir = env) -2 # minus two to make the mapping {-1,28}
-   
+        
         if(map_probabilities){
             data[, id.var[1]]<- 
                 dplyr::case_when(data[, id.var[1]] == -1  ~ 1,
@@ -692,9 +684,9 @@ batss.trial.pom = function(int,data,seed_setting,model,link,family,beta,prob0,
                                  data[, id.var[1]] >=  22 & data[, id.var[1]] <= 23 ~ 8,
                                  data[, id.var[1]] >=  24 & data[, id.var[1]] <= 26 ~ 9,
                                  data[, id.var[1]] >=  27 ~ 10)
-           # if data is in factor - need to remove empty levels
-           if(class(data[, id.var[1]]) =='factor'){
-               data[, id.var[1]]<-as.numeric(droplevels(as.factor(data[, id.var[1]])))
+            # if data is in factor - need to remove empty levels
+            if(class(data[, id.var[1]]) =='factor'){
+                data[, id.var[1]]<-as.numeric(droplevels(as.factor(data[, id.var[1]])))
             }
         }
     }
@@ -733,7 +725,7 @@ batss.trial.pom = function(int,data,seed_setting,model,link,family,beta,prob0,
         assign("ref",id.group$ref, envir = env) 
         #cat("D")
         # fit 
-
+        
         
         if ("control.family" %in% names(dots)) {
             control.link <- list(control.link=list(model=link))
@@ -744,271 +736,270 @@ batss.trial.pom = function(int,data,seed_setting,model,link,family,beta,prob0,
         } else {
             # Added the try function - will attempt to resolve -if not just save as failed function
             fit = try(
-                    do.call(INLA::inla,
-                            c(list(formula=model, data=data, family=family,
-                                   control.family=list(control.link=list(model=link)),
-                                   verbose=FALSE)
-                            ,dots)
-                            )
-                    ,silent = TRUE)
+                do.call(INLA::inla,
+                        c(list(formula=model, data=data, family=family,
+                               control.family=list(control.link=list(model=link)),
+                               verbose=FALSE)
+                          ,dots)
+                )
+                ,silent = TRUE)
             if (grepl('Error',fit[1])) {
                 if (map_probabilities){
-                INLA_fail=TRUE 
-                }
-        }
-        #cat("E")           
-        # posteriors, efficacy and futility
-        aw = id.target$active
-        if (!is.null(eff.arm) & INLA_fail==FALSE) {
-            mx.posterior_eff.lt[lw,aw] = apply(id.target[aw,c("id","alternative"),drop=FALSE],1,
-                                               posterior.fun,fit=fit,delta=delta.eff[lw]) 
-        } else if (!is.null(eff.arm) & INLA_fail==TRUE) {
-            mx.posterior_eff.lt[lw,aw] = NA
-        }  else if (is.null(eff.arm)) {
-            mx.posterior_eff.lt[lw,aw] = NA
-        }
-        
-        if ((twodelta || (is.null(eff.arm) && !is.null(fut.arm))) && INLA_fail==FALSE){ # NOT ADD ISSE - BUT DO IF ITS THE CASE
-            mx.posterior_fut.lt[lw,aw] = apply(id.target[aw,c("id","alternative"),drop=FALSE],1,
-                                               posterior.fun,fit=fit,delta=delta.fut[lw])               
-        }else{
-            if (!is.null(fut.arm) & INLA_fail==FALSE) {
-                mx.posterior_fut.lt[lw,aw] = mx.posterior_eff.lt[lw,aw]   
-            } else  if (!is.null(fut.arm) & INLA_fail==TRUE) {
-                mx.posterior_fut.lt[lw,aw] = NA
-            } else  if (is.null(fut.arm) ){
-                mx.posterior_fut.lt[lw,aw] = NA
+                    INLA_fail=TRUE }}
             }
-        }
-        if (!is.null(RAR)& INLA_fail==FALSE) {
-            mx.posterior_RAR.lt[lw,aw] = apply(id.target[aw,c("id","alternative"),drop=FALSE],1,
-                                               posterior.fun,fit=fit,delta=delta.RAR[lw])
-        } else if (!is.null(RAR)& INLA_fail==TRUE) {
-            mx.posterior_RAR.lt[lw,aw] = NA
-        }
-        
-        #cat("F")           
-        # update mx.futility.lt and mx.efficacy.lt
-        for(tw in 1:n.target){
-            if(aw[tw]){
-                
-                # efficacy
-                assign("posterior",mx.posterior_eff.lt[lw,tw], envir = env)
-                # assign("target",names(id.look[lw,names(temp)])==id.target[tw,"group"],envir = env)
-                if (is.null(eff.arm) || is.na(delta.eff[lw])) {
+            #cat("E")           
+            # posteriors, efficacy and futility
+            aw = id.target$active
+            if (!is.null(eff.arm) & INLA_fail==FALSE) {
+                mx.posterior_eff.lt[lw,aw] = apply(id.target[aw,c("id","alternative"),drop=FALSE],1,
+                                                   posterior.fun,fit=fit,delta=delta.eff[lw]) 
+            } else if (!is.null(eff.arm) & INLA_fail==TRUE) {
+                mx.posterior_eff.lt[lw,aw] = NA
+            }  else if (is.null(eff.arm)) {
+                mx.posterior_eff.lt[lw,aw] = NA
+            }
+            
+            if ((twodelta || (is.null(eff.arm) && !is.null(fut.arm))) && INLA_fail==FALSE){ # NOT ADD ISSE - BUT DO IF ITS THE CASE
+                mx.posterior_fut.lt[lw,aw] = apply(id.target[aw,c("id","alternative"),drop=FALSE],1,
+                                                   posterior.fun,fit=fit,delta=delta.fut[lw])               
+            }else{
+                if (!is.null(fut.arm) & INLA_fail==FALSE) {
+                    mx.posterior_fut.lt[lw,aw] = mx.posterior_eff.lt[lw,aw]   
+                } else  if (!is.null(fut.arm) & INLA_fail==TRUE) {
+                    mx.posterior_fut.lt[lw,aw] = NA
+                } else  if (is.null(fut.arm) ){
+                    mx.posterior_fut.lt[lw,aw] = NA
+                }
+            }
+            if (!is.null(RAR)& INLA_fail==FALSE) {
+                mx.posterior_RAR.lt[lw,aw] = apply(id.target[aw,c("id","alternative"),drop=FALSE],1,
+                                                   posterior.fun,fit=fit,delta=delta.RAR[lw])
+            } else if (!is.null(RAR)& INLA_fail==TRUE) {
+                mx.posterior_RAR.lt[lw,aw] = NA
+            }
+            
+            #cat("F")           
+            # update mx.futility.lt and mx.efficacy.lt
+            for(tw in 1:n.target){
+                if(aw[tw]){
+                    
+                    # efficacy
+                    assign("posterior",mx.posterior_eff.lt[lw,tw], envir = env)
+                    # assign("target",names(id.look[lw,names(temp)])==id.target[tw,"group"],envir = env)
+                    if (is.null(eff.arm) || is.na(delta.eff[lw])) {
+                        mx.efficacy.lt[lw,tw] = FALSE
+                    } else {
+                        mx.efficacy.lt[lw, tw] = R.utils::doCall(eff.arm, args = c(plyr::.(posterior=posterior,n=n,N=N,target=target,ref=ref),eff.arm.control), envir = env)        #call function instead of parsing and evaluating string
+                    }
+                    
+                    # futility
+                    if(twodelta || (is.null(eff.arm) && !is.null(fut.arm))){
+                        assign("posterior",mx.posterior_fut.lt[lw,tw], envir = env)
+                    }
+                    if (is.null(fut.arm) || is.na(delta.fut[lw])) {
+                        mx.futility.lt[lw,tw] = FALSE
+                    } else {
+                        mx.futility.lt[lw, tw] = R.utils::doCall(fut.arm, args = c(plyr::.(posterior=posterior,n=n,N=N,target=target,ref=ref),fut.arm.control), envir = env)        #call function instead of parsing and evaluating string
+                    }
+                    #---
+                }else{
                     mx.efficacy.lt[lw,tw] = FALSE
-                } else {
-                    mx.efficacy.lt[lw, tw] = R.utils::doCall(eff.arm, args = c(plyr::.(posterior=posterior,n=n,N=N,target=target,ref=ref),eff.arm.control), envir = env)        #call function instead of parsing and evaluating string
-                }
-                
-                # futility
-                if(twodelta || (is.null(eff.arm) && !is.null(fut.arm))){
-                    assign("posterior",mx.posterior_fut.lt[lw,tw], envir = env)
-                }
-                if (is.null(fut.arm) || is.na(delta.fut[lw])) {
                     mx.futility.lt[lw,tw] = FALSE
-                } else {
-                    mx.futility.lt[lw, tw] = R.utils::doCall(fut.arm, args = c(plyr::.(posterior=posterior,n=n,N=N,target=target,ref=ref),fut.arm.control), envir = env)        #call function instead of parsing and evaluating string
                 }
-                #---
-            }else{
-                mx.efficacy.lt[lw,tw] = FALSE
-                mx.futility.lt[lw,tw] = FALSE
             }
-        }
-        #cat("G")           
-        eff.target = apply(mx.efficacy.lt[1:lw,,drop=FALSE],2,any)
-        fut.target = apply(mx.futility.lt[1:lw,,drop=FALSE],2,any)
-        
-        #Futility and Efficacy - Exist / INLA has not failed to converge --> save as true/false to stop study
-        if (!is.null(eff.arm) & INLA_fail==FALSE) {
-            if(!is.na(eff.target)) eff.stop = eff.target else eff.stop =FALSE
-        } else if (!is.null(eff.arm) & INLA_fail==TRUE) {eff.stop = FALSE 
-        } else if (is.null(eff.arm)) {eff.stop = FALSE }
-        
-        if (INLA_fail==FALSE & !is.null(fut.arm)){ 
-            if(!is.na(fut.target)) fut.stop =fut.target else fut.stop =FALSE
-        } else if ( INLA_fail==TRUE & !is.null(fut.arm)){ fut.stop = FALSE
-        } else if (is.null(fut.arm)) {fut.stop = FALSE}
-        
-        #---
-        # efficacy   - Save results in vector to display    
-        if(INLA_fail==FALSE & any(mx.efficacy.lt[lw,aw])){
-            # identify arms
-            ew = which(mx.efficacy.lt[lw,]&aw)
-            # inactive arms according to eff.trial
-            id.target$active[ew] = FALSE
-            id.group[id.target$group[ew],"active"] = FALSE
-            # save estimate and adapt list of target 
-            id.target$look[ew]     = lw
-            id.target$efficacy[ew] = TRUE                
-            id.target[ew,c("low","mid","high")] = fit$summary.fixed[id.target$id[ew],
-                                                                    c("0.025quant","mean","0.975quant")]
-        }
-        # futility   - Save results in vector to display
-        if(INLA_fail==FALSE & any(mx.futility.lt[lw,aw])){
-            # identify arms
-            fw = which(mx.futility.lt[lw,]&aw)
-            # inactive arms according to fut.trial
-            id.target$active[fw] = FALSE
-            id.group[id.target$group[fw],"active"] = FALSE
-            # save estimate and adapt list of target 
-            id.target$look[fw]     = lw
-            id.target$futility[fw] = TRUE                
-            id.target[fw,c("low","mid","high")] = fit$summary.fixed[id.target$id[fw],
-                                                                    c("0.025quant","mean","0.975quant")]
-        }        
-        # stop trial due to no active parameters or last look
-        all.stop = (eff.stop|fut.stop)| all(!id.target$active)| lw==n.look        
-
-        if(all.stop){
-            if(any(id.target$active)){
-                aw = which(id.target$active)
-                id.target$look[aw]     = lw
-                if (INLA_fail==TRUE){id.target[aw,c("low","mid","high")] = c('NA','NA','NA')
-                                    id.target$nonconver = TRUE # added
-                                    message('Error in the whole running')} else{
-                id.target[aw,c("low","mid","high")] = fit$summary.fixed[id.target$id[aw],
-                                                                        c("0.025quant","mean","0.975quant")]}
-            }
-            break
-            # continue
-        }else{
+            #cat("G")           
+            eff.target = apply(mx.efficacy.lt[1:lw,,drop=FALSE],2,any)
+            fut.target = apply(mx.futility.lt[1:lw,,drop=FALSE],2,any)
             
-            # prob per group
-            if(!is.null(RAR)){
+            #Futility and Efficacy - Exist / INLA has not failed to converge --> save as true/false to stop study
+            if (!is.null(eff.arm) & INLA_fail==FALSE) {
+                if(!is.na(eff.target)) eff.stop = eff.target else eff.stop =FALSE
+            } else if (!is.null(eff.arm) & INLA_fail==TRUE) {eff.stop = FALSE 
+            } else if (is.null(eff.arm)) {eff.stop = FALSE }
+            
+            if (INLA_fail==FALSE & !is.null(fut.arm)){ 
+                if(!is.na(fut.target)) fut.stop =fut.target else fut.stop =FALSE
+            } else if ( INLA_fail==TRUE & !is.null(fut.arm)){ fut.stop = FALSE
+            } else if (is.null(fut.arm)) {fut.stop = FALSE}
+            
+            #---
+            # efficacy   - Save results in vector to display    
+            if(INLA_fail==FALSE & any(mx.efficacy.lt[lw,aw])){
+                # identify arms
+                ew = which(mx.efficacy.lt[lw,]&aw)
+                # inactive arms according to eff.trial
+                id.target$active[ew] = FALSE
+                id.group[id.target$group[ew],"active"] = FALSE
+                # save estimate and adapt list of target 
+                id.target$look[ew]     = lw
+                id.target$efficacy[ew] = TRUE                
+                id.target[ew,c("low","mid","high")] = fit$summary.fixed[id.target$id[ew],
+                                                                        c("0.025quant","mean","0.975quant")]
+            }
+            # futility   - Save results in vector to display
+            if(INLA_fail==FALSE & any(mx.futility.lt[lw,aw])){
+                # identify arms
+                fw = which(mx.futility.lt[lw,]&aw)
+                # inactive arms according to fut.trial
+                id.target$active[fw] = FALSE
+                id.group[id.target$group[fw],"active"] = FALSE
+                # save estimate and adapt list of target 
+                id.target$look[fw]     = lw
+                id.target$futility[fw] = TRUE                
+                id.target[fw,c("low","mid","high")] = fit$summary.fixed[id.target$id[fw],
+                                                                        c("0.025quant","mean","0.975quant")]
+            }        
+            # stop trial due to no active parameters or last look
+            all.stop = (eff.stop|fut.stop)| all(!id.target$active)| lw==n.look        
+            
+            if(all.stop){
+                if(any(id.target$active)){
+                    aw = which(id.target$active)
+                    id.target$look[aw]     = lw
+                    if (INLA_fail==TRUE){id.target[aw,c("low","mid","high")] = c('NA','NA','NA')
+                    id.target$nonconver = TRUE # added
+                    message('Error in the whole running')} else{
+                        id.target[aw,c("low","mid","high")] = fit$summary.fixed[id.target$id[aw],
+                                                                                c("0.025quant","mean","0.975quant")]}
+                }
+                break
+                # continue
+            }else{
+                
                 # prob per group
-                assign("posterior",mx.posterior_RAR.lt[lw,id.target$active], envir = env)
-                assign("active",id.group$active, envir = env)
-                #prob = .eval(RAR,envir=env) 
-                assign("n",unlist(id.look[lw, id.group$id]),envir = env)  
-                #assign ingredients to environment 'env' 
-                assign("ref",id.group$ref,envir = env)
-                assign("N",id.look$n[n.look],envir = env)
-                assign("RAR.control", RAR.control, envir = env)
-                prob = R.utils::doCall(RAR, args = c(plyr::.(posterior=posterior,n=n,N=N,ref=ref,active=active), RAR.control) ,envir = env)      #call function RAR in environment 'env'
-                #---
-            }else{
-                prob = prob0[id.group$active]
-            }
-            names(prob) = id.group$id[id.group$active]
-            mx.rprob.lt[lw,names(prob)] = prob/sum(prob)
-            
-            # predictors
-            assign("n",id.look[lw+1,"n"],envir=env)
-            assign("m",id.look[lw+1,"m"],envir=env)
-            assign("prob",prob,envir=env)
-            set.seed(lw+(n.look+1)*int)
-            
-            assign("var.control",var.control,envir=env)
-            covar <- vector("list",length(var[-1]))
-            for (ii in 1:length(var[-1])) {
-                tmp_nam <- names(var)[ii+1]
-                args_ <- plyr::.(n=m,m=m,prob=prob)
-                if (tmp_nam %in% names(var.control)) args_ <- c(args_, var.control[[tmp_nam]])
-                covar[[ii]] <- R.utils::doCall(var[[ii+1]], envir = env, args = args_)    
-                if (is.matrix(covar[[ii]])) colnames(covar[[ii]]) <- paste0(tmp_nam,1:dim(covar[[ii]])[2])
-            }
-            
-            #--- Now iterate on the next look - save the extra batch of patients as 'NEW' and add to the 
-            #       previous batch of patients at the interim.
-            new = as.data.frame(matrix(NA,id.look[lw+1,"m"],n.var,
-                                       dimnames=list(paste0(lw+1,"-",1:id.look[lw+1,"m"]),id.var)))
-            
-            pos.col <- 2
-            for (var.count in 1:(length(var)-1)){
-                if (!is.matrix(covar[[var.count]])) {
-                    new[,pos.col] = covar[[var.count]]
-                    pos.col <- pos.col+1
-                } else {
-                    for (jj in 1:dim(covar[[var.count]])[2]) {
-                        new[,pos.col] = covar[[var.count]][,jj]
+                if(!is.null(RAR)){
+                    # prob per group
+                    assign("posterior",mx.posterior_RAR.lt[lw,id.target$active], envir = env)
+                    assign("active",id.group$active, envir = env)
+                    #prob = .eval(RAR,envir=env) 
+                    assign("n",unlist(id.look[lw, id.group$id]),envir = env)  
+                    #assign ingredients to environment 'env' 
+                    assign("ref",id.group$ref,envir = env)
+                    assign("N",id.look$n[n.look],envir = env)
+                    assign("RAR.control", RAR.control, envir = env)
+                    prob = R.utils::doCall(RAR, args = c(plyr::.(posterior=posterior,n=n,N=N,ref=ref,active=active), RAR.control) ,envir = env)      #call function RAR in environment 'env'
+                    #---
+                }else{
+                    prob = prob0[id.group$active]
+                }
+                names(prob) = id.group$id[id.group$active]
+                mx.rprob.lt[lw,names(prob)] = prob/sum(prob)
+                
+                # predictors
+                assign("n",id.look[lw+1,"n"],envir=env)
+                assign("m",id.look[lw+1,"m"],envir=env)
+                assign("prob",prob,envir=env)
+                set.seed(lw+(n.look+1)*int)
+                
+                assign("var.control",var.control,envir=env)
+                covar <- vector("list",length(var[-1]))
+                for (ii in 1:length(var[-1])) {
+                    tmp_nam <- names(var)[ii+1]
+                    args_ <- plyr::.(n=m,m=m,prob=prob)
+                    if (tmp_nam %in% names(var.control)) args_ <- c(args_, var.control[[tmp_nam]])
+                    covar[[ii]] <- R.utils::doCall(var[[ii+1]], envir = env, args = args_)    
+                    if (is.matrix(covar[[ii]])) colnames(covar[[ii]]) <- paste0(tmp_nam,1:dim(covar[[ii]])[2])
+                }
+                
+                #--- Now iterate on the next look - save the extra batch of patients as 'NEW' and add to the 
+                #       previous batch of patients at the interim.
+                new = as.data.frame(matrix(NA,id.look[lw+1,"m"],n.var,
+                                           dimnames=list(paste0(lw+1,"-",1:id.look[lw+1,"m"]),id.var)))
+                
+                pos.col <- 2
+                for (var.count in 1:(length(var)-1)){
+                    if (!is.matrix(covar[[var.count]])) {
+                        new[,pos.col] = covar[[var.count]]
                         pos.col <- pos.col+1
+                    } else {
+                        for (jj in 1:dim(covar[[var.count]])[2]) {
+                            new[,pos.col] = covar[[var.count]][,jj]
+                            pos.col <- pos.col+1
+                        }
                     }
                 }
-            }
-            
-            if (family !='pom'){
                 
-                X <- model.matrix(model[-2], data = new)                                            
-                XB = X%*%beta[colnames(X)]
-                assign("mu",switch(link,
-                                   "identity" = XB,
-                                   "log" = exp(XB),
-                                   "logit" = INLA::inla.link.logit(XB, inverse=TRUE),
-                                   "probit" = INLA::inla.link.probit(XB, inverse=TRUE),
-                                   "robit" = INLA::inla.link.robit(XB, inverse=TRUE),
-                                   "cauchit" = INLA::inla.link.cauchit(XB, inverse=TRUE),
-                                   "loglog" = INLA::inla.link.loglog(XB, inverse=TRUE),
-                                   "cloglog" = INLA::inla.link.cloglog(XB, inverse=TRUE)),envir=env)
-                
-                tmp_nam <- names(var)[1] 
-                args_ <- plyr::.(n=m,mu=mu)                                                             # create a quoted(!) list of available 'ingredients' 
-                if (!(identical(var[[1]],rbinom) || identical(var[[1]],rnbinom))) {
-                    names(args_)[1:2] <- formalArgs(var[[1]])[1:2]  
-                } else {
-                    if (identical(var[[1]],rbinom)) {
-                        names(args_)[1:2] <- c("n","prob")
+                if (family !='pom'){
+                    
+                    X <- model.matrix(model[-2], data = new)                                            
+                    XB = X%*%beta[colnames(X)]
+                    assign("mu",switch(link,
+                                       "identity" = XB,
+                                       "log" = exp(XB),
+                                       "logit" = INLA::inla.link.logit(XB, inverse=TRUE),
+                                       "probit" = INLA::inla.link.probit(XB, inverse=TRUE),
+                                       "robit" = INLA::inla.link.robit(XB, inverse=TRUE),
+                                       "cauchit" = INLA::inla.link.cauchit(XB, inverse=TRUE),
+                                       "loglog" = INLA::inla.link.loglog(XB, inverse=TRUE),
+                                       "cloglog" = INLA::inla.link.cloglog(XB, inverse=TRUE)),envir=env)
+                    
+                    tmp_nam <- names(var)[1] 
+                    args_ <- plyr::.(n=m,mu=mu)                                                             # create a quoted(!) list of available 'ingredients' 
+                    if (!(identical(var[[1]],rbinom) || identical(var[[1]],rnbinom))) {
+                        names(args_)[1:2] <- formalArgs(var[[1]])[1:2]  
+                    } else {
+                        if (identical(var[[1]],rbinom)) {
+                            names(args_)[1:2] <- c("n","prob")
+                        }
+                    }                                                                                       # rename the list objects to the names required by specified formula (NOTE: the order of the items is set, if a function requires a different order this will not work, clever rearranging may be needed)
+                    if (tmp_nam %in% names(var.control)) args_ <- c(args_, var.control[[tmp_nam]])          # add extra arguments if provided
+                    new[, id.var[1]] = R.utils::doCall(var[[1]], args = args_, envir = env)                # execute in 'env' environment with unused arguments allowed
+                    
+                    # data appending
+                    data = rbind(data,new)
+                } else if (family =='pom'){
+                    # n doesn't make sense to be used - as rmultinom is high dimensional so will not work as rbinom
+                    # and therefore feeding the number of rows substitutes the n=m
+                    
+                    X <- data.matrix(qdapTools::mtabulate(as.data.frame(t(new)))) # if fails try using this  X<-model.matrix(model[-2], data = new)
+                    unlisted_beta <- matrix(unlist(beta), ncol = 2, byrow = TRUE)
+                    XB = X%*%t(unlisted_beta)
+                    assign("mu",switch(link,
+                                       "identity" = XB),envir=env)
+                    
+                    tmp_nam <- names(var)[1] 
+                    args_ <- plyr::.(#n=m, Not select n - as it will generate a SINGLE RMULTINOM per subject - so n=1 (numb subject implicit in number of rows)
+                        mu=mu)                                                             # create a quoted(!) list of available 'ingredients' 
+                    if (!(identical(var[[1]],rbinom) || identical(var[[1]],rnbinom))) {
+                        names(args_)[1] <- formalArgs(var[[1]])[1]  
+                    } else {
+                        if (identical(var[[1]],rbinom)) {
+                            names(args_)[1] <- c("prob")
+                        }
+                    }                                                                                       # rename the list objects to the names required by specified formula (NOTE: the order of the items is set, if a function requires a different order this will not work, clever rearranging may be needed)
+                    if (tmp_nam %in% names(var.control)) args_ <- c(args_, var.control[[tmp_nam]])          # add extra arguments if provided
+                    
+                    new[, id.var[1]] = R.utils::doCall(var[[1]], args = args_, envir = env) -2 # minus two to make the mapping {-1,28}
+                    
+                    if(map_probabilities){
+                        new[, id.var[1]]<- 
+                            dplyr::case_when(new[, id.var[1]] == -1  ~ 1,
+                                             new[, id.var[1]] ==  0  ~ 2,
+                                             new[, id.var[1]] >=  1  & new[, id.var[1]] <= 9 ~ 3,
+                                             new[, id.var[1]] >=  10 & new[, id.var[1]] <= 13 ~ 4,
+                                             new[, id.var[1]] >=  14 & new[, id.var[1]] <= 17 ~ 5,
+                                             new[, id.var[1]] >=  18 & new[, id.var[1]] <= 19 ~ 6,
+                                             new[, id.var[1]] >=  20 & new[, id.var[1]] <= 21 ~ 7,
+                                             new[, id.var[1]] >=  22 & new[, id.var[1]] <= 23 ~ 8,
+                                             new[, id.var[1]] >=  24 & new[, id.var[1]] <= 26 ~ 9,
+                                             new[, id.var[1]] >=  27 ~ 10)
                     }
-                }                                                                                       # rename the list objects to the names required by specified formula (NOTE: the order of the items is set, if a function requires a different order this will not work, clever rearranging may be needed)
-                if (tmp_nam %in% names(var.control)) args_ <- c(args_, var.control[[tmp_nam]])          # add extra arguments if provided
-                new[, id.var[1]] = R.utils::doCall(var[[1]], args = args_, envir = env)                # execute in 'env' environment with unused arguments allowed
-                
-                # data appending
-                data = rbind(data,new)
-            } else if (family =='pom'){
-                # n doesn't make sense to be used - as rmultinom is high dimensional so will not work as rbinom
-                # and therefore feeding the number of rows substitutes the n=m
-                
-                X <- data.matrix(qdapTools::mtabulate(as.data.frame(t(new)))) # if fails try using this  X<-model.matrix(model[-2], data = new)
-                unlisted_beta <- matrix(unlist(beta), ncol = 2, byrow = TRUE)
-                XB = X%*%t(unlisted_beta)
-                assign("mu",switch(link,
-                                   "identity" = XB),envir=env)
-                
-                tmp_nam <- names(var)[1] 
-                args_ <- plyr::.(#n=m, Not select n - as it will generate a SINGLE RMULTINOM per subject - so n=1 (numb subject implicit in number of rows)
-                    mu=mu)                                                             # create a quoted(!) list of available 'ingredients' 
-                if (!(identical(var[[1]],rbinom) || identical(var[[1]],rnbinom))) {
-                    names(args_)[1] <- formalArgs(var[[1]])[1]  
-                } else {
-                    if (identical(var[[1]],rbinom)) {
-                        names(args_)[1] <- c("prob")
-                    }
-                }                                                                                       # rename the list objects to the names required by specified formula (NOTE: the order of the items is set, if a function requires a different order this will not work, clever rearranging may be needed)
-                if (tmp_nam %in% names(var.control)) args_ <- c(args_, var.control[[tmp_nam]])          # add extra arguments if provided
-                
-                new[, id.var[1]] = R.utils::doCall(var[[1]], args = args_, envir = env) -2 # minus two to make the mapping {-1,28}
-            
-                if(map_probabilities){
-                    new[, id.var[1]]<- 
-                        dplyr::case_when(new[, id.var[1]] == -1  ~ 1,
-                                         new[, id.var[1]] ==  0  ~ 2,
-                                         new[, id.var[1]] >=  1  & new[, id.var[1]] <= 9 ~ 3,
-                                         new[, id.var[1]] >=  10 & new[, id.var[1]] <= 13 ~ 4,
-                                         new[, id.var[1]] >=  14 & new[, id.var[1]] <= 17 ~ 5,
-                                         new[, id.var[1]] >=  18 & new[, id.var[1]] <= 19 ~ 6,
-                                         new[, id.var[1]] >=  20 & new[, id.var[1]] <= 21 ~ 7,
-                                         new[, id.var[1]] >=  22 & new[, id.var[1]] <= 23 ~ 8,
-                                         new[, id.var[1]] >=  24 & new[, id.var[1]] <= 26 ~ 9,
-                                         new[, id.var[1]] >=  27 ~ 10)
+                    # data appending
+                    data = rbind(data,new)
                 }
-                # data appending
-                data = rbind(data,new)
-            }
-        }# end continue
-        #cat(".")
-    }}# end loop
-    
-    # output
-    # cat(paste0("\t end:",int,"\n"))
-    
-    colnames(mx.rprob.lt)      = paste0("r(",colnames(mx.rprob.lt),")")
-    colnames(id.look)[-c(1:4)] = paste0("n(",colnames(id.look)[-c(1:4)],")")
-    colnames(mx.posterior_eff.lt)  = paste0("pe(",colnames(mx.posterior_eff.lt),")")
-    colnames(mx.posterior_fut.lt)  = paste0("pf(",colnames(mx.posterior_fut.lt),")")
-    list(target = id.target, look = cbind(id.look,mx.posterior_eff.lt,mx.posterior_fut.lt,mx.rprob.lt),
-         data   = if(extended==2){table(data)}else{NULL})
+            }# end continue
+            #cat(".")
+        }# end loop
+
+# output
+# cat(paste0("\t end:",int,"\n"))
+
+colnames(mx.rprob.lt)      = paste0("r(",colnames(mx.rprob.lt),")")
+colnames(id.look)[-c(1:4)] = paste0("n(",colnames(id.look)[-c(1:4)],")")
+colnames(mx.posterior_eff.lt)  = paste0("pe(",colnames(mx.posterior_eff.lt),")")
+colnames(mx.posterior_fut.lt)  = paste0("pf(",colnames(mx.posterior_fut.lt),")")
+list(target = id.target, look = cbind(id.look,mx.posterior_eff.lt,mx.posterior_fut.lt,mx.rprob.lt),
+     data   = if(extended==2){table(data)}else{NULL})
 }
 
 
@@ -1135,6 +1126,5 @@ batss.res.s2 = function(sample,target){
     colnames(out)[1] = ""
     out
 }
-
 
 
