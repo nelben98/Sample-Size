@@ -78,7 +78,7 @@ multinomial_generation <-
         return(c(matrix(apply(sapp_prob, 1,function(x)which( x==1)))))
     }
 
-# different version - defined in battss_glm_breakdown - not using n (n is number of wors in prob_dist)
+# different version - defined in battss_glm_breakdown - not using n (n is number of worst in prob_dist)
 multinomial_generation( n =200,
                         prob_dist   = primOutDist_panth[,1]
                        ,size        = 1)
@@ -96,13 +96,14 @@ multinomial_generation( n =200,
 
 colnames(primOutDist_panth) #select the most appropiate ones
 
-multinom_rand_dset1<- data.frame(primOutDist_panth[,6]) # hyper Control
+multinom_rand_dset1<- data.frame(primOutDist_panth[,2]) # hyper Control
 multinom_rand_dset2<- data.frame(primOutDist_panth[,15]) # hyper Treatment
-Trials<-20
+Trials<-7
 
 source(paste0(getwd(),"/batss_glm_breakdown.R"))
 start.time <- Sys.time()
-scenario1 = batss.glm.pom(   
+
+scenario2 = batss.glm.pom(   
     model           = y ~ treatment,
     var             = list(y = multinomial_random,
                            treatment = treatalloc.fun),
@@ -133,10 +134,9 @@ scenario1 = batss.glm.pom(
     interim         = list(recruited=list(m0 = 89*2 #89*3 # Trigger interim at 89 patients per arm
                                          ,m  = 49*2  # As per the recruitment expected Do interims at 49/ arm
                                          )),
-
     eff.arm         = efficacy.arm.fun, # Efficiency function of posteriors
     delta.eff       = log(1.1), # Select which interims select efficiency beta P(beta > delta.fut)
-    eff.arm.control = list(b.eff = 1-0.84), # select the probability of the posterior > beta  
+    eff.arm.control = list(b.eff = 0.84), # select the probability of the posterior > beta  
     fut.arm         = futility.arm.fun,
     delta.fut       = log(1.075), # select the analysed efficiency beta P(beta > delta.fut)
     fut.arm.control = list(b.fut = 1-0.78), # select the probability of the posterior > beta  
@@ -147,7 +147,20 @@ scenario1 = batss.glm.pom(
     eff.trial=efficacy.arm.fun,
     fut.trial=futility.arm.fun,
     RAR = NULL,
-    extended = 1)
+    extended = 2)
+
+
+
+scenario2
+summary(scenario2)
+scenario2$H1
+for (i in 1:40){
+    print(scenario2$H1$trial[[i]]) }
+
+matrix(((scenario2$H1$estimate)), 
+       ncol = 3, 
+       byrow = TRUE)
+
 end.time <- Sys.time()
 time.taken <- end.time - start.time
 time.taken
@@ -157,9 +170,17 @@ summary(scenario1)
 plot(scenario1)
 
 scenario1 |> summary()   #pe - maginal using the log efficacy OR // #pf - marginal using the log futility OR
-scenario1$H1
+scenario1$H1$trial[[1]]
 
+scenario1$H1$estimate
+matrix(((scenario1$H1$estimate)), 
+       ncol = 3, 
+       byrow = TRUE) # THIRD COLUMN IS THE OR
 
+means_dist<-exp(mean(matrix(unlist(unlist(scenario1$H1$estimate)), ncol = 3, byrow = TRUE)[,3]))
+hist(exp(matrix(unlist(unlist(scenario1$H1$estimate)), ncol = 3, byrow = TRUE))[,3],breaks=15)
+
+sd(exp(matrix(unlist(unlist(scenario1$H1$estimate)), ncol = 3, byrow = TRUE)[,3]))
 
 
 INLA::inla(OSFD ~  treatment , 
