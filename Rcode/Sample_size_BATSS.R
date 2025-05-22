@@ -80,7 +80,7 @@ multinomial_generation <-
 
 # different version - defined in battss_glm_breakdown - not using n (n is number of worst in prob_dist)
 multinomial_generation( n =200,
-                        prob_dist   = primOutDist_panth[,1]
+                        prob_dist   = primOutDist_panth[,2]
                        ,size        = 1)
 
 
