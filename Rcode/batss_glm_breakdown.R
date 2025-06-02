@@ -326,7 +326,7 @@ batss.glm.pom = function(
     # seeds
      
     if(length(R)==1){id.seed=(1:R)+ R*(seed_set-1)}else{id.seed=R}    
-    message(glue::glue('{id.seed}'))
+    #message(glue::glue('{id.seed}')) in case need to check seed
     #############################
     # H1
     #############################
