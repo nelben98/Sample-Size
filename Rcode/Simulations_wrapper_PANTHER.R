@@ -37,6 +37,7 @@
 ########################################################################################################
 ########################################################################################################
 ########################################################################################################
+rm(list=ls())
 
 library(BATSS)
 library(tidyr)
@@ -44,10 +45,21 @@ library(magrittr)
 library(dplyr)
 library(INLA)
 
+if (length(commandArgs(trailingOnly=TRUE))!=0){
+    args=commandArgs(trailingOnly=TRUE)
+    Trials = as.numeric(args[1])
+    pres_wd = as.numeric(args[2])} else {
+    setwd(paste0(rstudioapi::getSourceEditorContext()$path,"/../.."))
+    pres_wd = getwd()}
+if(length(commandArgs(trailingOnly=TRUE)) <= 2) {m=1 # setting the m variable 
+} else {m = as.numeric(args[3])} # M will be the array job split - if applicatble
 
-setwd(paste0(rstudioapi::getSourceEditorContext()$path,"/.."))
-primOutDist_panth<- read.csv(paste0(getwd(),"/../","excel_distributions/VFDdistributions_logodds.csv"),header=TRUE) 
-source(paste0(getwd(),"/batss_glm_breakdown.R"))
+#nnodes = as.numeric(args[3]) # not needed unles many simulation chosen
+#m = as.numeric(args[4])
+
+
+primOutDist_panth<- read.csv(paste0(pres_wd,"/excel_distributions/VFDdistributions_logodds.csv"),header=TRUE) 
+source(paste0(pres_wd,"/Rcode/batss_glm_breakdown.R"))
 
 Wrapper<- function(
         beta_list,
@@ -111,7 +123,7 @@ Wrapper<- function(
 
 beta_0_select<-primOutDist_panth %>% dplyr::select(p_hypo_c, p_hypo_minus10, p_hypo_05, p_hypo_10,
                                                    p_hypo_20, p_hypo_30, p_hypo_40, p_hypo_50)
-Trials<-2
+
 
 results_wrap<-Wrapper(   
     beta_list =beta_0_select,
@@ -142,8 +154,8 @@ results_wrap<-Wrapper(
     delta.fut       = log(1.075), # select the analysed efficiency beta P(beta > delta.fut)
     fut.arm.control = list(b.fut = 1-0.78), # select the probability of the posterior > beta  
     delta.RAR       = 0,
-    computation     = "sequential",
-    #mc.cores        = parallel::detectCores()-1,
+    computation     = "parallel",
+    mc.cores        = future::availableCores(),
     H0              = FALSE,
     eff.trial=efficacy.arm.fun,
     fut.trial=futility.arm.fun,
@@ -151,5 +163,5 @@ results_wrap<-Wrapper(
     extended = 2)
 
 
-results_wrap$data
-results_wrap$summary
+saveRDS(results_wrap,
+        paste0(pres_wd,'/Results/simulation',m,'.rds'))
