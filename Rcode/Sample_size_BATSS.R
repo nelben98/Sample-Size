@@ -150,6 +150,7 @@ scenario2 = batss.glm.pom(
     extended = 2)
 
 
+saveRDS(scenario2,paste0(getwd(),"/../Results/Results_out.rds") )
 
 scenario2
 summary(scenario2)
