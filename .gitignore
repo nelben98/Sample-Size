@@ -1,8 +1,8 @@
-.Rproj.user
-.Rhistory
 inla.sif
 .def
 .sif
 .Rdata
 .RDS
 .rds
+.Rproj*
+.Rhistory
