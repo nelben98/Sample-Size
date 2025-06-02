@@ -462,7 +462,8 @@ batss.glm.pom = function(
             if(Sys.info()[[1]]!="Windows"){
                 trial_r = parallel::mclapply(id.seed,batss.trial.pom,
                                              data=data,model=model,link=link,family=family,beta=beta0,
-                                             RAR=RAR,RAR.control=RAR.control,twodelta=twodelta,delta.eff=delta.eff,delta.fut=delta.fut,
+                                             RAR=RAR,RAR.control=RAR.control,twodelta=twodelta,
+                                             delta.eff=delta.eff,delta.fut=delta.fut,
                                              eff.arm=eff.arm,eff.trial=eff.trial,delta.RAR=delta.RAR,
                                              eff.arm.control=eff.arm.control,eff.trial.control=eff.trial.control,
                                              fut.arm=fut.arm,fut.trial=fut.trial,
