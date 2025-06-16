@@ -110,14 +110,14 @@ Wrapper<- function(
                                  map_probabilities=map_probabilities,
                                  extended=extended,...)
     
-    data[[number_node-1]]<-matrix(glm_pom_run$H1$estimate, ncol = 3, byrow = TRUE,
+    data[[number_node]]<-matrix(glm_pom_run$H1$estimate, ncol = 3, byrow = TRUE,
                                   dimnames=list(paste0('Trial-',colnames(beta_list[number_node]),'-',1:R),
                                                 c('Looks','Result','posterior Mode'))) 
     
-    summary[number_node-1,1]<-glm_pom_run$H1$target$global$efficacy[2] # efficacy
-    summary[number_node-1,2]<-glm_pom_run$H1$target$global$futility[2] # futility
-    summary[number_node-1,3]<-1-(glm_pom_run$H1$target$global$futility[2]+glm_pom_run$H1$target$global$efficacy[2]) # unresolved
-    summary[number_node-1,4]<-glm_pom_run$H1$target$global$nonconverg[2] # issues
+    summary[number_node,1]<-glm_pom_run$H1$target$global$efficacy[2] # efficacy
+    summary[number_node,2]<-glm_pom_run$H1$target$global$futility[2] # futility
+    summary[number_node,3]<-1-(glm_pom_run$H1$target$global$futility[2]+glm_pom_run$H1$target$global$efficacy[2]) # unresolved
+    summary[number_node,4]<-glm_pom_run$H1$target$global$nonconverg[2] # issues
     
     out <-list(data = data, beta_list =beta_list, summary=summary)
 }
@@ -128,6 +128,8 @@ beta_0_select<-primOutDist_panth %>% dplyr::select(p_hypo_c, p_hypo_minus10, p_h
 
 
 t2=Sys.time()
+
+Trials<-18
 
 results_wrap<-Wrapper(   
     number_node =m,
@@ -159,13 +161,15 @@ results_wrap<-Wrapper(
     delta.fut       = log(1.075), # select the analysed efficiency beta P(beta > delta.fut)
     fut.arm.control = list(b.fut = 1-0.78), # select the probability of the posterior > beta  
     delta.RAR       = 0,
-    computation     = "parallel",
-    mc.cores        = 10,
+    computation     = "sequential",
+    mc.cores        = 4,
     H0              = FALSE,
     eff.trial=efficacy.arm.fun,
     fut.trial=futility.arm.fun,
     RAR = NULL,
     extended = 2)
+
+results_wrap
 
 t3<-Sys.time()
 print(t3-t2)
