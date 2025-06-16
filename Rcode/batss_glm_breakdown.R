@@ -734,7 +734,7 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
             control.link <- list(control.link=list(model=link))
             dots$control.family <- c(dots$control.family,control.link)
             
-            fit = do.call(INLA::inla,c(list(formula=model, data=data, family=family,
+            fit = do.call(INLA::inla,c(list(formula=model, data=data, family=family,control.compute=list(openmp.strategy = "small"),
                                             verbose=FALSE),dots))
         } else {
             # Added the try function - will attempt to resolve -if not just save as failed function
