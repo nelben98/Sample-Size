@@ -23,17 +23,17 @@ library(stringr)
 #  Distributions in columns, each row corresponding to an outcome value.
 #  Code assumes names will be, eg, "pcontrol_subgrp1" for control in subphenotype 1
 #  and  "pactive_OR1_1_subgrp2" for active treatment with OR=1.1 in subphenotype 2
-primOutDist<-read.csv(paste0(getwd(),"/../","excel_distributions/prob_prim_out_VANISH.csv"),header=TRUE) %>%
-        #make distribution of active the same as the passivel
-        mutate(pactive_OR1_2_subgrp1 = pcontrol_subgrp1, 
-               pactive_OR1_2_subgrp2 = pcontrol_subgrp2,
-               pactive_OR1_4_subgrp1 = pcontrol_subgrp1, 
-               pactive_OR1_4_subgrp2 = pcontrol_subgrp2)
+primOutDist <- read.csv(paste0(getwd(),"/../","excel_distributions/VFDdistributions_logodds.csv"),header=TRUE) %>%
+        #make distribution of active the same as the passive
+        select(p_hypo_10,p_hypo_50,p_hypo_pooled) %>%
+        mutate(#pactive_OR1_1_subgrp1 = p_hypo_10,
+               pactive_OR1_5_subgrp1 = p_hypo_50, 
+               pcontrol_subgrp1= p_hypo_pooled)
 
 #### KEY INPUT PARAMETERS TO SET START HERE
 
 # number of simulations
-nSims<-10
+nSims<-80
 
 # set random number seed
 set.seed(1)
@@ -46,16 +46,16 @@ interimN<-list()
 ## The final row should contain the final max sample size.
 
 # subphenotype 1 - Hypo (70%)
-interimN[[1]]<-read.csv(paste0(getwd(),"/../","excel_distributions/interimN1.csv"),header=TRUE)
+interimN[[1]]<-read.csv(paste0(getwd(),"/../","excel_distributions/interimN_Hypo.csv"),header=TRUE)
 
 # Subpheno 2 - Hyper (30%)
-interimN[[2]]<-read.csv(paste0(getwd(),"/../","excel_distributions/interimN2.csv"),header=TRUE)
+interimN[[2]]<-read.csv(paste0(getwd(),"/../","excel_distributions/interimN_Hyper.csv"),header=TRUE)
 
 # total SS (both arms) in each subphenotype and overall
 phenoN<-list()
 phenoN[[1]]<-interimN[[1]][,1]+interimN[[1]][,2]
-phenoN[[2]]<-interimN[[2]][,1]+interimN[[2]][,2]
-totalN<-phenoN[[1]]+phenoN[[2]]
+#phenoN[[2]]<-interimN[[2]][,1]+interimN[[2]][,2]
+totalN<-phenoN[[1]]#+phenoN[[2]]
 
 # number of interims
 nInterims<-nrow(interimN[[1]])
@@ -71,13 +71,14 @@ phenoInt[[1]]<-rep(1,nInterims)
 phenoInt[[2]]<-c(0,rep(0:1, times=nInterims/2))
 
 # number and names of phenotypes
-nPhenotypes<-2
-phenotypes<-c("1","2")
+nPhenotypes<-1
+phenotypes<-c("1")#,"2")
 
 
 # active arm sample size cap in each phenotype (again, part of PANTHER design)
 # Recruitment to an arm is stopped if the cap (based on equivalent frequentist SS) is reached
-sampleCap<-c(504,529)  # (phenotype 1, phenotype 2)
+sampleCap<-c(529#,529
+             )  # (phenotype 1, phenotype 2)  ## MBG 18JUN2025: CHANGED TO 533 FROM 529 - OTHERWISE ISSUES
 
 
 ## Stopping triggers
@@ -92,7 +93,8 @@ futilityPThresh<-0.78
 ## operating characteristics are calculated for each of these profiles
 ## and these are put together to construct power curves.
 ## Profile names should correspond to the names of distributions in primOutDist but without the "pactive_OR"nprefix and "_subgrpx" suffix
-profiles<-c("1_2","1_4")
+profiles<-c(#"1_1",
+    "1_5")
 nProfiles<-length(profiles)
 
 #### INPUT PARAMETERS TO SET END HERE
@@ -223,7 +225,7 @@ for (m in 1:nSims) { #Repeat the study for each simulation
                            )
                   )
             
-            # + The above yields data with a column for each possible outcome value and 1s indicating the outcome for each observation
+            # + The above yields data with a column for each possible outcome value and 1s indicating the outcome for each observation 
             #    next few lines convert this to a single column giving the outcome value
             # + '2' is subtracted because the lowest category for our organ support outcome is not 1 but -1 (representing death) 
             #    here the control and active data are also stacked into a single dataset (one for each profile/phenotype)
@@ -353,7 +355,7 @@ for (m in 1:nSims) { #Repeat the study for each simulation
                     
                     
                     # update trial result for this simulation 
-                    
+                    message(glue::glue('printing values to detect error {g} - {p} - {m} -- {i}'))
                     if(stopEfficacy[[g]][[p]][m,i]){
                         trialResult[[g]][[p]][m,i:(nInterims)]<-"Effective"
                         stoppingPoint[[g]][[p]][m]<-i
@@ -422,7 +424,7 @@ ORShortVector<-list()
 preORLongVectorAll<-list()
 ORLongVectorAll<-list()
 
-# profileVector<-list()
+profileVector<-list()
 ORMatrix<-list()
 powerMatrix<-list()
 futilityMatrix<-list()
@@ -486,12 +488,20 @@ resultVectorAll<-c(rep("graduated",length(powerVectorAll)),rep("rejected due to 
 powerVectorAll<-c(powerVectorAll,futilityVectorAll,capVectorAll,undecidedVectorAll)
 phenoVectorAll<-rep(phenoVectorAll,4)
 
-powerCurves<-data.frame(cbind(ORLongVectorAll,powerVectorAll,resultVectorAll,phenoVectorAll,intNumberVectorAll,phenoIntNumberVectorAll))
+powerCurves<-data.frame(cbind(unlist(ORLongVectorAll),powerVectorAll,resultVectorAll,phenoVectorAll,intNumberVectorAll,phenoIntNumberVectorAll))
 names(powerCurves)<-c("OR","Probability","Result","Subphenotype","InterimNumber","phenoInterimNumber")
 powerCurves$OR<-as.numeric(str_replace(powerCurves$OR,"_","."))
 powerCurves$Probability<-as.numeric(powerCurves$Probability)
 
-powerStats<-data.frame(cbind(rep(nSims,nInterims),rep(efficacyOR,nInterims),rep(efficacyPThresh,nInterims),rep(futilityOR,nInterims),rep(futilityPThresh,nInterims),phenoInt[[1]]*phenoN[[1]],phenoInt[[2]]*phenoN[[2]],ORMatrix[[1]],powerMatrix[[1]],futilityMatrix[[1]], ORMatrix[[2]],powerMatrix[[2]],futilityMatrix[[2]]))
+powerStats<-data.frame(cbind(rep(nSims,nInterims),rep(efficacyOR,nInterims),rep(efficacyPThresh,nInterims),rep(futilityOR,nInterims),
+                             rep(futilityPThresh,nInterims),phenoInt[[1]]*phenoN[[1]]
+                            # ,phenoInt[[2]]*phenoN[[2]]
+                             ,ORMatrix[[1]],
+                             powerMatrix[[1]],futilityMatrix[[1]]
+                             #,ORMatrix[[2]],powerMatrix[[2]],futilityMatrix[[2]]
+                             )
+                       )
+
 names(powerStats)<-c("nSims","efficacyOR","efficacyPThresh","futilityOR","futilityPThresh",paste0("maxN_",phenotypes[1]),paste0("maxN_",phenotypes[2]),rep(paste0("OR_",phenotypes[1]),nProfiles),rep(paste0("power_",phenotypes[1]),nProfiles),rep(paste0("futility_",phenotypes[1]),nProfiles),rep(paste0("OR_",phenotypes[2]),nProfiles),rep(paste0("power_",phenotypes[2]),nProfiles),rep(paste0("futility_",phenotypes[2]),nProfiles))
 
 write.csv(powerStats,"powerStats.csv")
