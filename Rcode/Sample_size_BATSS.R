@@ -96,9 +96,9 @@ multinomial_generation( n =200,
 
 colnames(primOutDist_panth) #select the most appropiate ones
 
-multinom_rand_dset1<- data.frame(primOutDist_panth[,2]) # hyper Control
+multinom_rand_dset1<- data.frame(primOutDist_panth[,6]) # hyper Control
 multinom_rand_dset2<- data.frame(primOutDist_panth[,15]) # hyper Treatment
-Trials<-7
+Trials<-20
 
 source(paste0(getwd(),"/batss_glm_breakdown.R"))
 start.time <- Sys.time()
@@ -130,8 +130,8 @@ scenario2 = batss.glm.pom(
     #delta.RAR       = 0,
     
     prob0           = c("UC"=1,"Simvastatin"=1),#,"Baricitinib"=1),
-    N               = 504*2, # Assume the maximum cap of hypoinflammatory is reached
-    interim         = list(recruited=list(m0 = 89*2 #89*3 # Trigger interim at 89 patients per arm
+    N               = 529*2, # Assume the maximum cap of hypoinflammatory is reached
+    interim         = list(recruited=list(m0 = 89*2  #89*3 # Trigger interim at 89 patients per arm
                                          ,m  = 49*2  # As per the recruitment expected Do interims at 49/ arm
                                          )),
     eff.arm         = efficacy.arm.fun, # Efficiency function of posteriors
@@ -155,6 +155,7 @@ saveRDS(scenario2,paste0(getwd(),"/../Results/Results_out.rds") )
 scenario2
 summary(scenario2)
 scenario2$H1
+
 for (i in 1:40){
     print(scenario2$H1$trial[[i]]) }
 
@@ -165,6 +166,8 @@ matrix(((scenario2$H1$estimate)),
 end.time <- Sys.time()
 time.taken <- end.time - start.time
 time.taken
+
+scenario1<-scenario2
 
 print(scenario1)
 summary(scenario1)
