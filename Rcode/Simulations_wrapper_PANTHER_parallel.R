@@ -110,6 +110,7 @@ Wrapper<- function(
                                  map_probabilities=map_probabilities,
                                  extended=extended,...)
     
+    
     data[[number_node]]<-matrix(glm_pom_run$H1$estimate, ncol = 3, byrow = TRUE,
                                   dimnames=list(paste0('Trial-',colnames(beta_list[number_node]),'-',1:R),
                                                 c('Looks','Result','posterior Mode'))) 
@@ -119,7 +120,7 @@ Wrapper<- function(
     summary[number_node,3]<-1-(glm_pom_run$H1$target$global$futility[2]+glm_pom_run$H1$target$global$efficacy[2]) # unresolved
     summary[number_node,4]<-glm_pom_run$H1$target$global$nonconverg[2] # issues
     
-    out <-list(data = data, beta_list =beta_list, summary=summary)
+    out <-list(data = data, beta_list=beta_list, summary=summary,all_details=glm_pom_run)
 }
 
 
@@ -129,7 +130,7 @@ beta_0_select<-primOutDist_panth %>% dplyr::select(p_hypo_c, p_hypo_minus10, p_h
 
 t2=Sys.time()
 
-Trials<-18
+Trials<-15
 
 results_wrap<-Wrapper(   
     number_node =m,
