@@ -1,0 +1,22 @@
+Bootstrap: docker
+From: ubuntu:20.04
+
+%post
+ apt-get update && apt-get install -y --no-install-recommends \
+        libssl-dev \
+        libcurl4-openssl-dev \
+        libxml2-dev \
+        libudunits2-dev \  
+        gdebi-core \
+        wget \
+        ca-certificates \
+        curl
+
+    # Install INLA
+    mkdir -p /opt/inla
+    cd /opt/inla
+    wget https://inla.r-inla-download.org/R/stable/bin/linux/inla_21.02.23-1_amd64.deb
+    gdebi -n inla_21.02.23-1_amd64.deb
+
+    # Installing other R packages needed
+    Rscript -e 'install.packages(c("ggplot2", "dplyr", "Matrix"), repos="https://cloud.r-project.org")'

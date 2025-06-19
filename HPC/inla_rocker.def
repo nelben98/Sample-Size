@@ -1,0 +1,42 @@
+Bootstrap: docker
+From: rocker/geospatial:latest
+
+%labels
+    Author Nel Benlloch
+    Version v1.0
+    Description "Rocker R base with INLA and user script"
+
+%post
+    # Update package lists and install required system libraries
+     apt-get update && apt-get install -y --no-install-recommends \
+        libssl-dev \
+        libcurl4-openssl-dev \
+        libxml2-dev \
+        libudunits2-dev \
+        gdebi-core \
+        wget \
+        ca-certificates \
+        curl
+
+    # Install INLA from the official INLA repo
+    Rscript -e "install.packages('qdapTools', repos='https://cloud.r-project.org')"
+    Rscript -e "install.packages('future', repos='https://cloud.r-project.org')"
+    Rscript -e "install.packages('INLA', repos=c(getOption('repos'), INLA='https://inla.r-inla-download.org/R/stable'),dep=TRUE)"
+    Rscript -e "install.packages('BATSS')"
+
+    # Clean apt cache to reduce image size
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    ## Ensure inla.mkl.run is executable (fix permission issue)
+    chmod a+x /usr/local/lib/R/site-library/INLA/bin/linux/64bit/inla.*
+    
+    # Create project directory and copy script (will be copied in %files)
+    mkdir -p /opt/project
+
+#%files
+#    script.R /opt/project/script.R
+
+#%runscript
+#    echo "Running your INLA R script..."
+#    Rscript /opt/project/script.R
