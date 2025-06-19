@@ -656,9 +656,11 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
         
         # n doesn't make sense to be used - as rmultinom is high dimensional so will not work as rbinom
         # and therefore feeding the number of rows substitutes the n=m
-        X <-  model.matrix(model[-2], data = data) #data.matrix(qdapTools::mtabulate(as.data.frame(t(data))))
+        X <- data.matrix(qdapTools::mtabulate(as.data.frame(t(data))))
+        
+        # Invert the order - as the UC is going to have the beta first!
         unlisted_beta <- matrix(unlist(unlist(beta)), ncol = 2, byrow = FALSE)
-        XB = X%*%t(unlisted_beta)
+        XB = X%*%t(matrix(c(unlisted_beta[,which],unlisted_beta[,-which]),ncol=2))
         assign("mu",switch(link,
                            "identity" = XB),envir=env) # only one type of link function
         
@@ -735,13 +737,13 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
             control.link <- list(control.link=list(model=link))
             dots$control.family <- c(dots$control.family,control.link)
             
-            fit = do.call(INLA::inla,c(list(formula=model, data=data, family=family,control.compute=list(openmp.strategy = "small"),
+            fit = do.call(INLA::inla,c(list(formula=model, data=data, family=family,num.threads=1,
                                             verbose=FALSE),dots))
         } else {
             # Added the try function - will attempt to resolve -if not just save as failed function
             fit = try(
                 do.call(INLA::inla,
-                        c(list(formula=model, data=data, family=family,
+                        c(list(formula=model, data=data, family=family, num.threads=1,
                                control.family=list(control.link=list(model=link)),
                                verbose=FALSE)
                           ,dots)
@@ -957,7 +959,8 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
                     
                     X <- data.matrix(qdapTools::mtabulate(as.data.frame(t(new)))) # if fails try using this  X<-model.matrix(model[-2], data = new)
                     unlisted_beta <- matrix(unlist(unlist(beta)), ncol = 2, byrow = FALSE)
-                    XB = X%*%t(unlisted_beta)
+                    XB = X%*%t(matrix(c(unlisted_beta[,which],unlisted_beta[,-which]),ncol=2))
+                    
                     assign("mu",switch(link,
                                        "identity" = XB),envir=env)
                     
