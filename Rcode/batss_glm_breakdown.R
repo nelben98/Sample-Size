@@ -653,6 +653,7 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
         data[, id.var[1]] = R.utils::doCall(var[[1]], args = args_, envir = env)                # execute in 'env' environment with unused arguments allowed
         
     } else if (family =='pom'){
+        
         # n doesn't make sense to be used - as rmultinom is high dimensional so will not work as rbinom
         # and therefore feeding the number of rows substitutes the n=m
         X <-  model.matrix(model[-2], data = data) #data.matrix(qdapTools::mtabulate(as.data.frame(t(data))))
@@ -679,7 +680,7 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
             data[, id.var[1]]<- 
                 dplyr::case_when(data[, id.var[1]] == -1  ~ 1,
                                  data[, id.var[1]] ==  0  ~ 2,
-                                 data[, id.var[1]] >=  1  & data[, id.var[1]] <= 9 ~ 3,
+                                 data[, id.var[1]] >=  1  & data[, id.var[1]] <= 9  ~ 3,
                                  data[, id.var[1]] >=  10 & data[, id.var[1]] <= 13 ~ 4,
                                  data[, id.var[1]] >=  14 & data[, id.var[1]] <= 17 ~ 5,
                                  data[, id.var[1]] >=  18 & data[, id.var[1]] <= 19 ~ 6,
@@ -955,7 +956,7 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
                     # and therefore feeding the number of rows substitutes the n=m
                     
                     X <- data.matrix(qdapTools::mtabulate(as.data.frame(t(new)))) # if fails try using this  X<-model.matrix(model[-2], data = new)
-                    unlisted_beta <- matrix(unlist(beta), ncol = 2, byrow = TRUE)
+                    unlisted_beta <- matrix(unlist(unlist(beta)), ncol = 2, byrow = FALSE)
                     XB = X%*%t(unlisted_beta)
                     assign("mu",switch(link,
                                        "identity" = XB),envir=env)
