@@ -357,7 +357,7 @@ batss.glm.pom = function(
                              id.group=id.group,n.group=n.group,groupvar=groupvar,
                              var=var,var.control=var.control,id.var=id.var,n.var=n.var,
                              #linux.os=linux.os,
-                             map_probabilities =map_probabilities,
+                             map_probabilities =map_probabilities,which=which,
                              extended = extended, ...)
             
             
@@ -378,7 +378,7 @@ batss.glm.pom = function(
                                              var=var,var.control=var.control,id.var=id.var,n.var=n.var,
                                              # linux.os=linux.os,
                                              extended = extended, mc.cores=mc.cores,
-                                             map_probabilities =map_probabilities,mc.set.seed = FALSE,...)
+                                             map_probabilities =map_probabilities,which=which,mc.set.seed = FALSE,...)
                 # windows without forking
             }else{
                 cl = parallel::makeCluster(getOption("cl.cores", mc.cores))
@@ -397,7 +397,7 @@ batss.glm.pom = function(
                                               id.group=id.group,n.group=n.group,groupvar=groupvar,
                                               var=var,var.control=var.control,id.var=id.var,n.var=n.var,
                                               #linux.os=linux.os,
-                                              map_probabilities =map_probabilities,
+                                              map_probabilities =map_probabilities,which=which,
                                               extended = extended,...)
                 parallel::stopCluster(cl)    
             }
@@ -453,7 +453,7 @@ batss.glm.pom = function(
                              id.group=id.group,n.group=n.group,groupvar=groupvar,
                              var=var,var.control=var.control,id.var=id.var,n.var=n.var,
                              #linux.os=linux.os,
-                             map_probabilities =map_probabilities,
+                             map_probabilities =map_probabilities,which=which,
                              extended = extended, ...)
             
             # parallel    
@@ -474,7 +474,7 @@ batss.glm.pom = function(
                                              var=var,var.control=var.control,id.var=id.var,n.var=n.var,
                                              #linux.os=linux.os,
                                              extended = extended, 
-                                             map_probabilities =map_probabilities,
+                                             map_probabilities =map_probabilities,which=which,
                                              mc.cores=mc.cores,mc.set.seed = FALSE,...)
                 # windows without forking
             }else{
@@ -494,7 +494,7 @@ batss.glm.pom = function(
                                               id.group=id.group,n.group=n.group,groupvar=groupvar,
                                               var=var,var.control=var.control,id.var=id.var,n.var=n.var,
                                               #linux.os=linux.os,
-                                              map_probabilities =map_probabilities,
+                                              map_probabilities =map_probabilities,which=which,
                                               extended=extended, ...)
                 parallel::stopCluster(cl)    
             }
@@ -589,6 +589,7 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
                            twodelta,delta.eff,delta.fut,delta.RAR,
                            var,var.control,id.var,n.var,
                            map_probabilities,
+                           which,
                            #linux.os=linux.os,
                            extended,...){
     # int=2
