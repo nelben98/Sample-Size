@@ -124,13 +124,14 @@ Wrapper<- function(
 }
 
 
-beta_0_select<-primOutDist_panth %>% dplyr::select(p_hypo_c, p_hypo_minus10, p_hypo_05, p_hypo_10,
-                                                   p_hypo_20, p_hypo_30, p_hypo_40, p_hypo_50)
+beta_0_select<-primOutDist_panth %>% dplyr::select(p_hypo_c,p_hypo_30)
+                                                   # , p_hypo_minus10, p_hypo_05, p_hypo_10,
+                                                   # p_hypo_20, p_hypo_30, p_hypo_40, p_hypo_50)
 
 
 t2=Sys.time()
 
-Trials<-15
+Trials<-50
 
 results_wrap<-Wrapper(   
     number_node =m,
@@ -170,7 +171,6 @@ results_wrap<-Wrapper(
     RAR = NULL,
     extended = 2)
 
-results_wrap
 
 t3<-Sys.time()
 print(t3-t2)

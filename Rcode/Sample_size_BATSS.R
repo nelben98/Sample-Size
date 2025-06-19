@@ -98,10 +98,9 @@ colnames(primOutDist_panth) #select the most appropiate ones
 
 multinom_rand_dset1<- data.frame(primOutDist_panth[,6]) # hyper Control
 multinom_rand_dset2<- data.frame(primOutDist_panth[,15]) # hyper Treatment
-Trials<-20
+Trials<-25
 
 source(paste0(getwd(),"/batss_glm_breakdown.R"))
-start.time <- Sys.time()
 
 scenario2 = batss.glm.pom(   
     model           = y ~ treatment,

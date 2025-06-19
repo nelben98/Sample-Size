@@ -33,7 +33,7 @@ primOutDist <- read.csv(paste0(getwd(),"/../","excel_distributions/VFDdistributi
 #### KEY INPUT PARAMETERS TO SET START HERE
 
 # number of simulations
-nSims<-80
+nSims<-50
 
 # set random number seed
 set.seed(1)
