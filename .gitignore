@@ -7,6 +7,6 @@ inla.sif
 .Rproj*
 .Rhistory
 .Rproj.user
-.pptx
-
 *.pptx
+*.png
+*rds
