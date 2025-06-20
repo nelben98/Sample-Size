@@ -120,7 +120,23 @@ Wrapper<- function(
     summary[number_node,3]<-1-(glm_pom_run$H1$target$global$futility[2]+glm_pom_run$H1$target$global$efficacy[2]) # unresolved
     summary[number_node,4]<-glm_pom_run$H1$target$global$nonconverg[2] # issues
     
-    out <-list(data = data, beta_list=beta_list, summary=summary,all_details=glm_pom_run)
+    out <-list(data = data, beta_list=beta_list, summary=summary,all_details=glm_pom_run,
+               data_inputs=list(seed_set= number_node,
+                              model=model,var=var,var.control=var.control,family=family,link=link,
+                              beta=beta,which,alternative ,R=R,N=N,
+                              interim=interim,
+                              prob0=prob0,
+                              delta.eff=delta.eff,delta.fut=delta.fut, delta.RAR=delta.RAR,
+                              eff.arm=eff.arm,eff.arm.control=eff.arm.control,
+                              eff.trial=eff.trial,eff.trial.control=eff.trial.control,
+                              fut.arm=fut.arm,fut.arm.control=fut.arm.control,
+                              fut.trial=fut.trial,fut.trial.control=fut.trial.control,
+                              RAR=RAR,RAR.control=RAR.control,
+                              H0=H0,
+                              computation=computation,
+                              mc.cores=mc.cores,
+                              map_probabilities=map_probabilities,
+                              extended=extended))
 }
 
 
@@ -131,7 +147,7 @@ beta_0_select<-primOutDist_panth %>% dplyr::select(p_hypo_c,p_hypo_30)
 
 t2=Sys.time()
 
-Trials<-50
+Trials<-8
 
 results_wrap<-Wrapper(   
     number_node =m,
@@ -163,7 +179,7 @@ results_wrap<-Wrapper(
     delta.fut       = log(1.075), # select the analysed efficiency beta P(beta > delta.fut)
     fut.arm.control = list(b.fut = 1-0.78), # select the probability of the posterior > beta  
     delta.RAR       = 0,
-    computation     = "sequential",
+    computation     = "parallel",
     mc.cores        = 4,
     H0              = FALSE,
     eff.trial=efficacy.arm.fun,
@@ -175,6 +191,11 @@ results_wrap<-Wrapper(
 t3<-Sys.time()
 print(t3-t2)
 
+results_wrap$data_inputs
 
 saveRDS(results_wrap,
         paste0(pres_wd,'/Results/simulation',m,'.rds'))
+
+# View this in the local R data session
+results_wrap_100
+
