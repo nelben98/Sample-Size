@@ -45,6 +45,26 @@ library(magrittr)
 library(dplyr)
 library(INLA)
 
+# Load the distribution of probabilities - and choose hypo/hyper samples
+primOutDist_panth<- read.csv(paste0("/rds/general/user/nb221/home/ICTU/Sample_size","/excel_distributions/VFDdistributions_logodds.csv"),header=TRUE) 
+source(paste0("/rds/general/user/nb221/home/ICTU/Sample_size","/Rcode/batss_glm_breakdown.R"))
+
+
+# beta_0_select<-primOutDist_panth %>% dplyr::select(p_hyper_c,
+#                                                    p_hyper_minus30, p_hyper_minus20, p_hyper_minus10,
+#                                                    p_hyper_05, p_hyper_10, p_hyper_20, p_hyper_30,
+#                                                    p_hyper_40, p_hyper_50,p_hyper_60) %>%
+#     mutate(p_hyper_0=p_hyper_c)
+
+# below the hypo distributions
+beta_0_select<-
+    primOutDist_panth %>% dplyr::select(p_hypo_pooled,
+                                        p_hypo_minus10, p_hypo_05, p_hypo_10,
+                                        p_hypo_20, p_hypo_30, p_hypo_40, p_hypo_50) %>%
+    mutate(p_hypo_0=p_hypo_pooled)
+
+number_betas<-ncol(beta_0_select)-1
+
 if (length(commandArgs(trailingOnly=TRUE))!=0){
     args=commandArgs(trailingOnly=TRUE)
     print(args)
@@ -60,7 +80,6 @@ if(length(commandArgs(trailingOnly=TRUE)) <= 2) {
 #m = as.numeric(args[4])
 
 
-primOutDist_panth<- read.csv(paste0(pres_wd,"/excel_distributions/VFDdistributions_logodds.csv"),header=TRUE) 
 source(paste0(pres_wd,"/Rcode/batss_glm_breakdown.R"))
 
 Wrapper<- function(
@@ -138,11 +157,6 @@ Wrapper<- function(
                               map_probabilities=map_probabilities,
                               extended=extended))
 }
-
-
-beta_0_select<-primOutDist_panth %>% dplyr::select(p_hypo_c,p_hypo_30)
-                                                   # , p_hypo_minus10, p_hypo_05, p_hypo_10,
-                                                   # p_hypo_20, p_hypo_30, p_hypo_40, p_hypo_50)
 
 
 t2=Sys.time()
