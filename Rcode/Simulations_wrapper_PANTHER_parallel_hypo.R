@@ -91,6 +91,10 @@ if(length(commandArgs(trailingOnly=TRUE)) <= 2) {
 } 
 
 
+mc_cores=18
+print(glue::glue('trying with {mc_cores}'))
+
+
 Wrapper<- function(
         number_node =1,
         beta_list,
