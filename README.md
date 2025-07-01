@@ -19,7 +19,8 @@ For local running - once the INLA and BATSS packages have been installed (ie the
 
 Components:
 
-* bats_glm_breakdown.R: This file contains all the background functions to run the BATSS package using POM - (Not for direct use, back-end only).
-* Sample_size_BATSS.R: This will run one set of comparison between two betas (underlying distributions of Days).
-* Simulations wrapper: These files are more elaborate versions of Sample_size_BATSS, using the bats_glm_breakdown functions on a group of betas (distributions) - used to compute in parallel.
-* raw_samplesize_original.R.R : This file compiles the originial version of the sample size calculations (using Ed's original code).
+
+* **Sample_size_BATSS.R**: This will run one set of comparison between two betas (underlying distributions of Days). Also change the two file paths to the correct folders (excel distributions and Rcode)- and you can set the code running.
+* **bats_glm_breakdown.R**: This file contains all the background functions to run the BATSS package using POM - (Not for direct use, back-end only).
+* **Simulations wrapper**: These files are more elaborate versions of Sample_size_BATSS, using the bats_glm_breakdown functions on a group of betas (distributions) - used to compute in parallel.
+* **raw_samplesize_original.R** : This file compiles the originial version of the sample size calculations (using Ed's original code).
