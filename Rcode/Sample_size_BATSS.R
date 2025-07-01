@@ -56,37 +56,6 @@ setwd(paste0(rstudioapi::getSourceEditorContext()$path,"/.."))
 #  Distributions in columns, each row corresponding to an outcome value.
 primOutDist_panth<- read.csv(paste0(getwd(),"/../","excel_distributions/VFDdistributions_logodds.csv"),header=TRUE) 
 
-
-
-
-
-# Multinomial function - bespoke to get the value on 30 days
-# Information i need - 
-# samp_n - is set by the m (ie how many individuals)
-# prob_dist - is set by the beta - so need to fit a list
-# as no prob_dist - also not num_dist
-
-multinomial_generation <- 
-    function(n = nrow(prob_dist), # default to be nrows of prob dist- if want diferent, specify
-             prob_dist,
-             size){
-        
-        sapp_prob<-t(rmultinom(n=n ,   # m information is in X
-                               size=size,
-                               prob=prob_dist)) 
-        
-        return(c(matrix(apply(sapp_prob, 1,function(x)which( x==1)))))
-    }
-
-# different version - defined in battss_glm_breakdown - not using n (n is number of worst in prob_dist)
-multinomial_generation( n =200,
-                        prob_dist   = primOutDist_panth[,2]
-                       ,size        = 1)
-
-
-
-
-
 #######################################################################################################
 
 # END of setup - Start of the coding of the trial:
