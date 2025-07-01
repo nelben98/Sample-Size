@@ -10,5 +10,4 @@ inla.sif
 *.pptx
 *.png
 *rds
-powerStats.csv
 .RDataTmp
