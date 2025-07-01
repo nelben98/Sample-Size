@@ -125,7 +125,7 @@ Wrapper<- function(
                beta_list[number_node+1])  # this is the treatment - changes by iteration
     
     
-    glm_pom_run <- batss.glm.pom(seed_set= number_node,
+    glm_pom_run <- batss.glm.pom(seed_set= seed_set,
                                  model=model,var=var,var.control=var.control,family=family,link=link,
                                  beta=beta,which,alternative ,R=R,N=N,
                                  interim=interim,
@@ -153,7 +153,7 @@ Wrapper<- function(
     summary[number_node,4]<-glm_pom_run$H1$target$global$nonconverg[2] # issues
     
     out <-list(data = data, beta_list=beta_list, summary=summary,all_details=glm_pom_run,
-               data_inputs=list(seed_set= number_node,
+               data_inputs=list(seed_set= seed_set,
                               model=model,var=var,var.control=var.control,family=family,link=link,
                               beta=beta,which,alternative ,R=R,N=N,
                               interim=interim,
@@ -209,6 +209,7 @@ results_wrap<-Wrapper(
     computation     = "parallel",
     mc.cores        = 4,
     H0              = FALSE,
+    seed_set        = ceiling(unique_core_id/number_betas),
     eff.trial=efficacy.arm.fun,
     fut.trial=futility.arm.fun,
     RAR = NULL,
