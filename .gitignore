@@ -10,3 +10,4 @@ inla.sif
 *.pptx
 *.png
 *rds
+.RDataTmp

@@ -124,7 +124,9 @@ Wrapper<- function(
 beta_0_select<-primOutDist_panth %>% dplyr::select(p_hypo_c, p_hypo_minus10, p_hypo_05, p_hypo_10,
                                                    p_hypo_20, p_hypo_30, p_hypo_40, p_hypo_50)
 
-
+time1<-Sys.time()
+Trials<-40
+    
 results_wrap<-Wrapper(   
     beta_list =beta_0_select,
     model           = y ~ treatment,
@@ -155,12 +157,16 @@ results_wrap<-Wrapper(
     fut.arm.control = list(b.fut = 1-0.78), # select the probability of the posterior > beta  
     delta.RAR       = 0,
     computation     = "parallel",
-    mc.cores        = future::availableCores(),
+    mc.cores        = future::availableCores()-1,
     H0              = FALSE,
     eff.trial=efficacy.arm.fun,
     fut.trial=futility.arm.fun,
     RAR = NULL,
     extended = 2)
+
+time2<-Sys.time()
+
+time2-time1
 
 
 saveRDS(results_wrap,

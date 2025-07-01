@@ -325,8 +325,8 @@ batss.glm.pom = function(
     
     # seeds
      
-    if(length(R)==1){id.seed=(1:R)+ R*(seed_set-1)}else{id.seed=R}    
-    #message(glue::glue('{id.seed}')) in case need to check seed
+    if(length(R)==1){id.seed=(1:R)+ R*(seed_set-1)}else{id.seed=R}    # changes in the seed to guarantee uniqueness across multiple nodes
+    #message(glue::glue('{id.seed}')) #in case need to check seed
     #############################
     # H1
     #############################
@@ -630,7 +630,7 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
         #X = model.matrix(as.formula(paste0("~",strsplit(model,"~")[[1]][2])),data=data)
         X <- model.matrix(model[-2], data = data)                                            
         #---
-        XB = X%*%beta
+        XB = X%*%beta 
         assign("mu",switch(link,
                            "identity" = XB,
                            "log"      = exp(XB),
@@ -660,10 +660,13 @@ batss.trial.pom = function(int,data,model,link,family,beta,prob0,
         X <- data.matrix(qdapTools::mtabulate(as.data.frame(t(data))))
         
         # Invert the order - as the UC is going to have the beta first!
+        # X is the vector of 1s-0s if patients Active-Placebo
+        # B is the beta - select the distribution of the patient (dist of Active or dist of Plcbo)
+        # xB --> simply save appropiate distribution for individuals. 
         unlisted_beta <- matrix(unlist(unlist(beta)), ncol = 2, byrow = FALSE)
         XB = X%*%t(matrix(c(unlisted_beta[,which],unlisted_beta[,-which]),ncol=2))
         assign("mu",switch(link,
-                           "identity" = XB),envir=env) # only one type of link function
+                           "identity" = XB),envir=env) # only one type of link function, as the input of the distributions is NOT meaningful with other identity links (different setup)
         
         tmp_nam <- names(var)[1] 
         args_ <- plyr::.(#n=m, Not select n - as it will generate a SINGLE RMULTINOM per subject - so n=1 (numb subject implicit in number of rows)

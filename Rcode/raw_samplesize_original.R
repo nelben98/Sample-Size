@@ -1,39 +1,32 @@
-### Bayesian group sequential design simulation code
+### Bayesian group sequential design simulation code - original code
 ### Ordinal primary outcome, proportional odds model
 ### Author: Ed Waddingham, Imperial Clinical Trials Unit
 ### February 2025
 
-
-setwd(paste0(rstudioapi::getSourceEditorContext()$path,"/.."))
-
-
 ## Load libraries
 library(remotes)
 library(MASS)
-library(extraDistr)
+#library(extraDistr)
 library(dplyr)
-library(brms)
+#library(brms)
 library(INLA)
-library(brinla)
+#library(brinla)
 library(ggplot2)
 library(gridExtra)
 library(stringr)
 
 ## Edit this line to read in the distrbutions for the primary outcome.
 #  Distributions in columns, each row corresponding to an outcome value.
-#  Code assumes names will be, eg, "pcontrol_subgrp1" for control in subphenotype 1
-#  and  "pactive_OR1_1_subgrp2" for active treatment with OR=1.1 in subphenotype 2
-primOutDist <- read.csv(paste0(getwd(),"/../","excel_distributions/VFDdistributions_logodds.csv"),header=TRUE) %>%
-        #make distribution of active the same as the passive
-        select(p_hypo_10,p_hypo_50,p_hypo_pooled) %>%
-        mutate(#pactive_OR1_1_subgrp1 = p_hypo_10,
-               pactive_OR1_5_subgrp1 = p_hypo_50, 
-               pcontrol_subgrp1= p_hypo_pooled)
+setwd(paste0(rstudioapi::getSourceEditorContext()$path,'/../../excel_distributions')) # MBG - set at wd this file
+
+VFDdists<-read.csv("VFDdistributions_logodds.csv",header=TRUE)
+VFDdists$p_hypo_null<-VFDdists$p_hypo_pooled
+VFDdists$p_hyper_null<-VFDdists$p_hyper_c
 
 #### KEY INPUT PARAMETERS TO SET START HERE
 
 # number of simulations
-nSims<-50
+nSims<-3
 
 # set random number seed
 set.seed(1)
@@ -45,40 +38,37 @@ interimN<-list()
 ## Row 1 gives the sample size at interim analysis 1, etc.
 ## The final row should contain the final max sample size.
 
-# subphenotype 1 - Hypo (70%)
-interimN[[1]]<-read.csv(paste0(getwd(),"/../","excel_distributions/interimN_Hypo.csv"),header=TRUE)
-
-# Subpheno 2 - Hyper (30%)
-interimN[[2]]<-read.csv(paste0(getwd(),"/../","excel_distributions/interimN_Hyper.csv"),header=TRUE)
+# subphenotype 1
+interimN[[1]]<-read.csv("interimN_Hypo.csv",header=TRUE)
+# subphenotype 2
+interimN[[2]]<-read.csv("interimN_Hyper.csv",header=TRUE)
 
 # total SS (both arms) in each subphenotype and overall
 phenoN<-list()
 phenoN[[1]]<-interimN[[1]][,1]+interimN[[1]][,2]
-#phenoN[[2]]<-interimN[[2]][,1]+interimN[[2]][,2]
-totalN<-phenoN[[1]]#+phenoN[[2]]
+phenoN[[2]]<-interimN[[2]][,1]+interimN[[2]][,2]
+totalN<-phenoN[[1]]+phenoN[[2]]
 
 # number of interims
 nInterims<-nrow(interimN[[1]])
 
 
-# indicators showing which phenotypes are included in each interim
 phenoInt<-list()
+# indicators showing which phenotypes are included in each interim
 # (this is based on the PANTHER design where the smaller phenotype is not always included)
-
 # phenotype 1
 phenoInt[[1]]<-rep(1,nInterims)
 # phenotype 2
-phenoInt[[2]]<-c(0,rep(0:1, times=nInterims/2))
+phenoInt[[2]]<-c(0,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0)
 
 # number and names of phenotypes
-nPhenotypes<-1
-phenotypes<-c("1")#,"2")
+nPhenotypes<-2
+phenotypes<-c("hypo","hyper")
 
 
 # active arm sample size cap in each phenotype (again, part of PANTHER design)
-# Recruitment to an arm is stopped if the cap (based on equivalent frequentist SS) is reached
-sampleCap<-c(529#,529
-             )  # (phenotype 1, phenotype 2)  ## MBG 18JUN2025: CHANGED TO 533 FROM 529 - OTHERWISE ISSUES
+# Recruitment to an arm is stopped if the cap (based on equivalent freqentist SS) is reached
+sampleCap<-c(504,529)  # (phenotype 1, phenotype 2)
 
 
 ## Stopping triggers
@@ -89,21 +79,18 @@ efficacyPThresh<-0.84
 futilityOR<-1.075
 futilityPThresh<-0.78
 
+
 ## active treatment arm profiles to simulate for each treatment
 ## operating characteristics are calculated for each of these profiles
 ## and these are put together to construct power curves.
-## Profile names should correspond to the names of distributions in primOutDist but without the "pactive_OR"nprefix and "_subgrpx" suffix
-profiles<-c(#"1_1",
-    "1_5")
+## Profile names correspond to odds ratios eg 10=1.1, 20=1.2
+profiles<-c("10","20","30","40","50")
 nProfiles<-length(profiles)
 
 #### INPUT PARAMETERS TO SET END HERE
 
-
 # initialise dataframes for simulated data
-    # and results dataframes/vectors
-
-
+# and results dataframes/vectors
 simData<-list()
 postCoefmean<-list()
 postCoefse<-list()
@@ -132,8 +119,6 @@ q80N<-vector()
 controlStoppingPoint<-list()
 overallStoppingPoint<-rep(0,nSims)
 nStoppedTreatments<-list()
-
-# Setup of the dataframes/lists that will hold all the information during the simulations:
 for (g in 1:nPhenotypes){
     simData[[g]]<-list()
     stopEfficacy[[g]]<-list()
@@ -160,7 +145,6 @@ for (g in 1:nPhenotypes){
     expectedN[[g]]<-list()
     
     for (p in 1:nProfiles) {
-        
         simData[[g]][[p]]<-data.frame(matrix(nrow=interimN[[g]][nInterims,1]+interimN[[g]][nInterims,2],ncol=2))
         names(simData[[g]][[p]])<-c("treat","OSFD")
         simData[[g]][[p]]$treat<-c(rep(0,interimN[[g]][nInterims,1]),rep(1,interimN[[g]][nInterims,2]))
@@ -194,44 +178,35 @@ for (g in 1:nPhenotypes){
 }
 
 
-# Simulate outcome data:
+# Simulate outcome data
 # Outcome is simulated for all participants up to max sample size
-# The data is later subsetted to give a dataset for each INTERIM analysis
+# The data is later subsetted to give a dataset for each interim analysis
 
-for (m in 1:nSims) { #Repeat the study for each simulation
+for (m in 1:nSims) {
     rawSimData_c<-list()
     rawSimData_t<-list()
     simDataAll<-list()
     simDataRand<-list()
     
     for (g in 1:nPhenotypes){
+        # control arm: simulate draws from multinomial distribution
+        rawSimData_c[[g]]<-t(rmultinom(interimN[[g]][nInterims,2],size=1,prob=VFDdists[,names(VFDdists)==paste0("p_",phenotypes[g],"_null")]))
+        # treatment arm for each treatment profile for each active treatment
         
-        # control arm: simulate draws from multinomial distribution - for each of their phenotypes
-        rawSimData_c[[g]]<-
-            t(rmultinom(interimN[[g]][nInterims,1]
-                       ,size=1
-                       ,prob=primOutDist[,names(primOutDist)==paste0("pcontrol_subgrp",phenotypes[g])]
-                       )
-              )
         
-        # treatment arm: simulate draws from multinomial distribution for each treatment profile (two treatments)
         rawSimData_t[[g]]<-list()
         
-        for (p in 1:nProfiles){ # FOR EACH OF TWO TREATMENTS
-            rawSimData_t[[g]][[p]]<-
-                t(rmultinom(interimN[[g]][nInterims,2]
-                           ,size=1
-                           ,prob=primOutDist[,names(primOutDist)==paste0("pactive_OR",profiles[p],"_subgrp",phenotypes[g])]
-                           )
-                  )
+        for (p in 1:nProfiles){
+            rawSimData_t[[g]][[p]]<-t(rmultinom(interimN[[g]][nInterims,2],size=1,prob=VFDdists[,names(VFDdists)==paste0("p_",phenotypes[g],"_",profiles[p])]))
             
-            # + The above yields data with a column for each possible outcome value and 1s indicating the outcome for each observation 
-            #    next few lines convert this to a single column giving the outcome value
-            # + '2' is subtracted because the lowest category for our organ support outcome is not 1 but -1 (representing death) 
-            #    here the control and active data are also stacked into a single dataset (one for each profile/phenotype)
+            
+            # the above yields data with a column for each possible outcome value and 1s indicating the outcome for each observation
+            # next few lines convert this to a single column giving the outcome value
+            # a 2 is subtracted because the lowest category for our organ support outcome is not 1 but -1 (representing death) 
+            # here the control and active data are also stacked into a single dataset (one for each profile/pheotype)
             for (i in 1:nrow(simData[[g]][[p]])) {
                 if(simData[[g]][[p]]$treat[i]==0){
-                    simData[[g]][[p]]$OSFD[i]<-which(rawSimData_c[[g]][i,]==1)-2 #shift to account for death ('-1')
+                    simData[[g]][[p]]$OSFD[i]<-which(rawSimData_c[[g]][i,]==1)-2
                 }			
                 if(simData[[g]][[p]]$treat[i]==1){
                     simData[[g]][[p]]$OSFD[i]<-which(rawSimData_t[[g]][[p]][i-interimN[[g]][nInterims,1],]==1)-2		
@@ -239,31 +214,24 @@ for (m in 1:nSims) { #Repeat the study for each simulation
             }
         }
         
-    }# Now we have simulated the subject's survival days '-1' --> '28' days
-    
-    
-    
+    }
     interimDataAll<-list()
     simDataAll<-list()
     simDataRand<-list()
     
-    ## + Append the simulated data in both phenotypes together to create a 
-    ##   single dataset simDataAll[[p]] for each profile p
-    ## + Subset this to create interimDataAll[[p]][[i]] for each interim i
+    ## Append the simulated data in both phenotypes toegther to create a single dataset simDataAll[[p]] for each profile p
+    ## Subset this to create interimDataAll[[p]][[i]] for each interim i
     
     for (p in 1:nProfiles){
         interimDataAll[[p]]<-list()
-        
-        simDataAll[[p]]<-data.frame(matrix(nrow=0,ncol=2)) # create empty dframe to hold both cols
+        simDataAll[[p]]<-data.frame(matrix(nrow=0,ncol=2))
         names(simDataAll[[p]])<-c("treat","OSFD")
-        
         for (g in 1:nPhenotypes){
             simDataAll[[p]]<-rbind(simDataAll[[p]],simData[[g]][[p]])
         }
         # randomise order of simulated data
         simDataRand[[p]]<-simDataAll[[p]][order(sample(1:nrow(simDataAll[[p]]))),]
         rownames(simDataRand[[p]])<-NULL
-        
         # subset first N_int patients for each interim
         for (i in 1:(nInterims)){
             
@@ -271,10 +239,7 @@ for (m in 1:nSims) { #Repeat the study for each simulation
         }	
     }
     
-    ### Set up analysis datasets 
-    ###     -INLA matrix analysis
-    ###     -Posterior dataset
-    ###     -Master dataset by phenotype
+    ### Set up analysis datasets
     
     modelINLA<-list()
     master<-list()
@@ -299,21 +264,22 @@ for (m in 1:nSims) { #Repeat the study for each simulation
         for (i in 1:(nInterims)){
             
             
-            # Recoding the organ support free days into 10 categories 
-            #  (Since INLA can only fit proportional odds model for up to 
-            #  10 categories)
-            interimDataAll[[p]][[i]]$OSFD2 <- case_when(interimDataAll[[p]][[i]]$OSFD == -1  ~ 1,
-                                                        interimDataAll[[p]][[i]]$OSFD ==  0  ~ 2,
-                                                        interimDataAll[[p]][[i]]$OSFD >=  1  & interimDataAll[[p]][[i]]$OSFD <= 9 ~ 3,
-                                                        interimDataAll[[p]][[i]]$OSFD >=  10 & interimDataAll[[p]][[i]]$OSFD <= 13 ~ 4,
-                                                        interimDataAll[[p]][[i]]$OSFD >=  14 & interimDataAll[[p]][[i]]$OSFD <= 17 ~ 5,
-                                                        interimDataAll[[p]][[i]]$OSFD >=  18 & interimDataAll[[p]][[i]]$OSFD <= 19 ~ 6,
-                                                        interimDataAll[[p]][[i]]$OSFD >=  20 & interimDataAll[[p]][[i]]$OSFD <= 21 ~ 7,
-                                                        interimDataAll[[p]][[i]]$OSFD >=  22 & interimDataAll[[p]][[i]]$OSFD <= 23 ~ 8,
-                                                        interimDataAll[[p]][[i]]$OSFD >=  24 & interimDataAll[[p]][[i]]$OSFD <= 26 ~ 9,
-                                                        interimDataAll[[p]][[i]]$OSFD >=  27 ~ 10)
+            #recoding the organ support free days into 10 categories 
+            #since INLA can only fit proportional odds model for up to 
+            #10 categories
+            interimDataAll[[p]][[i]]$OSFD2 <- case_when(interimDataAll[[p]][[i]]$OSFD == -1 ~ 1,
+                                                        interimDataAll[[p]][[i]]$OSFD == 0 ~ 2,
+                                                        interimDataAll[[p]][[i]]$OSFD >= 1 & interimDataAll[[p]][[i]]$OSFD <= 9 ~ 3,
+                                                        interimDataAll[[p]][[i]]$OSFD >= 10 & interimDataAll[[p]][[i]]$OSFD <= 13 ~ 4,
+                                                        interimDataAll[[p]][[i]]$OSFD >= 14 & interimDataAll[[p]][[i]]$OSFD <= 17 ~ 5,
+                                                        interimDataAll[[p]][[i]]$OSFD >= 18 & interimDataAll[[p]][[i]]$OSFD <= 19 ~ 6,
+                                                        interimDataAll[[p]][[i]]$OSFD >= 20 & interimDataAll[[p]][[i]]$OSFD <= 21 ~ 7,
+                                                        interimDataAll[[p]][[i]]$OSFD >= 22 & interimDataAll[[p]][[i]]$OSFD <= 23 ~ 8,
+                                                        interimDataAll[[p]][[i]]$OSFD >= 24 & interimDataAll[[p]][[i]]$OSFD <= 26 ~ 9,
+                                                        interimDataAll[[p]][[i]]$OSFD == 27 ~ 10)
             
             # split the data by phenotype again
+            
             for (g in 1:nPhenotypes){
                 master[[g]][[p]][[i]]<-interimDataAll[[p]][[i]][interimDataAll[[p]][[i]]$pheno==phenotypes[g],]
             }
@@ -322,19 +288,20 @@ for (m in 1:nSims) { #Repeat the study for each simulation
     
     
     
-    ### Carry out analyses - INLA and Markov chains
+    ### Carry out analyses
     
     for (g in 1:nPhenotypes){
         
         for (p in 1:nProfiles){
             for (i in 1:(nInterims)){ if (phenoInt[[g]][i]==1) {
-                
                 # only carry out analysis if treatment efficacy undecided in this phenotype
                 if (trialResult[[g]][[p]][m,i]=="Inconclusive"){
                     
                     # remove empty levels to avoid crashing the model fit
                     master[[g]][[p]][[i]]$OSFD2<-as.numeric(droplevels(as.factor(master[[g]][[p]][[i]]$OSFD2)))
+                    
                     ## INLA analysis of ordinal outcome
+                    
                     modelINLA[[g]][[p]][[i]] <- inla(OSFD2 ~  treat , family='pom',
                                                      data = master[[g]][[p]][[i]], 
                                                      control.fixed = list(mean = list( treat = 0), prec = 0.1),
@@ -355,7 +322,7 @@ for (m in 1:nSims) { #Repeat the study for each simulation
                     
                     
                     # update trial result for this simulation 
-                    message(glue::glue('printing values to detect error {g} - {p} - {m} -- {i}'))
+                    
                     if(stopEfficacy[[g]][[p]][m,i]){
                         trialResult[[g]][[p]][m,i:(nInterims)]<-"Effective"
                         stoppingPoint[[g]][[p]][m]<-i
@@ -385,8 +352,6 @@ for (m in 1:nSims) { #Repeat the study for each simulation
 }
 
 
-#head(modelINLA)
-
 
 # percentage of simulations that are successful / futile by ith interim
 for (i in 1:(nInterims)){
@@ -401,7 +366,11 @@ for (i in 1:(nInterims)){
             perDrugPhenoN[[g]][[p]][[i]]<-interimN[[g]][,2][pmin(i,stoppingPoint[[g]][[p]])]
             expectedN[[g]][[p]][i]<-mean(perDrugPhenoN[[g]][[p]][[i]])
         }
+        
+        
+        
     }
+    
 }
 
 
@@ -421,10 +390,6 @@ for (i in 1:(nInterims)){
 ORLongVector<-list()
 preORLongVector<-list()
 ORShortVector<-list()
-preORLongVectorAll<-list()
-ORLongVectorAll<-list()
-
-profileVector<-list()
 ORMatrix<-list()
 powerMatrix<-list()
 futilityMatrix<-list()
@@ -433,19 +398,17 @@ powerVector<-list()
 futilityVector<-list()
 capVector<-list()
 undecidedVector<-list()
-
-
+ORLongVectorAll<-vector()
+preORLongVectorAll<-vector()
 powerVectorAll<-vector()
 futilityVectorAll<-vector()
 capVectorAll<-vector()
 undecidedVectorAll<-vector()
 phenoVectorAll<-vector()
-
 for (g in 1:nPhenotypes){
     ORShortVector[[g]]<-vector()
     ORLongVector[[g]]<-vector()
     preORLongVector[[g]]<-vector()
-    ORLongVectorAll[[g]]<-vector()
     ORMatrix[[g]]<-matrix(nrow=0,ncol=nProfiles)
     powerVector[[g]]<-vector()
     powerMatrix[[g]]<-vector()
@@ -454,16 +417,13 @@ for (g in 1:nPhenotypes){
     capVector[[g]]<-vector()
     undecidedVector[[g]]<-vector()
     phenoVector[[g]]<-rep(phenotypes[g],nProfiles*nInterims)
-    
     for (p in 1:nProfiles){
         ORShortVector[[g]]<-c(ORShortVector[[g]],exp(mean(postOR[[g]][[p]])))
         ORLongVector[[g]]<-c(ORLongVector[[g]],rep(exp(mean(postOR[[g]][[p]])),nInterims))
-        preORLongVector[[g]]<-c(preORLongVector[[g]],rep(profileVector[p],nInterims))
-        
+        preORLongVector[[g]]<-c(preORLongVector[[g]],rep(profiles[p],nInterims))
         powerMatrix[[g]]<-cbind(powerMatrix[[g]],percentSuccess[[g]][[p]])
         powerVector[[g]]<-c(powerVector[[g]],percentSuccess[[g]][[p]])
         futilityMatrix[[g]]<-cbind(futilityMatrix[[g]],percentFutile[[g]][[p]]+percentExceededCap[[g]][[p]])
-        
         futilityVector[[g]]<-c(futilityVector[[g]],percentFutile[[g]][[p]])
         capVector[[g]]<-c(capVector[[g]],percentExceededCap[[g]][[p]])
         undecidedVector[[g]]<-c(undecidedVector[[g]],percentUndecided[[g]][[p]])
@@ -480,31 +440,25 @@ for (g in 1:nPhenotypes){
     phenoVectorAll<-c(phenoVectorAll,phenoVector[[g]])
 }
 
-ORLongVectorAll<-c(ORLongVectorAll,ORLongVectorAll)
+
+preORLongVectorAll<-c(preORLongVectorAll,preORLongVectorAll)
 intNumberVectorAll<-rep(c(1:nInterims),nPhenotypes*nProfiles)
 phenoIntNumberVectorAll<-rep(paste0(phenoVectorAll,intNumberVectorAll),4)
-
 resultVectorAll<-c(rep("graduated",length(powerVectorAll)),rep("rejected due to futility",length(powerVectorAll)),rep("exceeded cap",length(powerVectorAll)),rep("undecided",length(powerVectorAll)))
 powerVectorAll<-c(powerVectorAll,futilityVectorAll,capVectorAll,undecidedVectorAll)
 phenoVectorAll<-rep(phenoVectorAll,4)
-
-powerCurves<-data.frame(cbind(unlist(ORLongVectorAll),powerVectorAll,resultVectorAll,phenoVectorAll,intNumberVectorAll,phenoIntNumberVectorAll))
+powerCurves<-data.frame(cbind(preORLongVectorAll,powerVectorAll,resultVectorAll,phenoVectorAll,intNumberVectorAll,phenoIntNumberVectorAll))
 names(powerCurves)<-c("OR","Probability","Result","Subphenotype","InterimNumber","phenoInterimNumber")
 powerCurves$OR<-as.numeric(str_replace(powerCurves$OR,"_","."))
 powerCurves$Probability<-as.numeric(powerCurves$Probability)
 
-powerStats<-data.frame(cbind(rep(nSims,nInterims),rep(efficacyOR,nInterims),rep(efficacyPThresh,nInterims),rep(futilityOR,nInterims),
-                             rep(futilityPThresh,nInterims),phenoInt[[1]]*phenoN[[1]]
-                            # ,phenoInt[[2]]*phenoN[[2]]
-                             ,ORMatrix[[1]],
-                             powerMatrix[[1]],futilityMatrix[[1]]
-                             #,ORMatrix[[2]],powerMatrix[[2]],futilityMatrix[[2]]
-                             )
-                       )
-
+powerStats<-data.frame(cbind(rep(nSims,nInterims),rep(efficacyOR,nInterims),rep(efficacyPThresh,nInterims),rep(futilityOR,nInterims),rep(futilityPThresh,nInterims),phenoInt[[1]]*phenoN[[1]],phenoInt[[2]]*phenoN[[2]],ORMatrix[[1]],powerMatrix[[1]],futilityMatrix[[1]], ORMatrix[[2]],powerMatrix[[2]],futilityMatrix[[2]]))
 names(powerStats)<-c("nSims","efficacyOR","efficacyPThresh","futilityOR","futilityPThresh",paste0("maxN_",phenotypes[1]),paste0("maxN_",phenotypes[2]),rep(paste0("OR_",phenotypes[1]),nProfiles),rep(paste0("power_",phenotypes[1]),nProfiles),rep(paste0("futility_",phenotypes[1]),nProfiles),rep(paste0("OR_",phenotypes[2]),nProfiles),rep(paste0("power_",phenotypes[2]),nProfiles),rep(paste0("futility_",phenotypes[2]),nProfiles))
 
 write.csv(powerStats,"powerStats.csv")
+write.csv(powerStats,"powerStats.csv")
+
+
 
 ggplot(powerCurves[powerCurves$InterimNumber==nInterims,])+
     geom_line(aes(x = OR, y = Probability, color = Subphenotype,linetype = Result) )+
@@ -524,19 +478,19 @@ powerCurves$Result<-factor(powerCurves$Result,levels=c("graduated","rejected due
 
 palette<-c("green","red","orange","cyan")
 
-plot1<-ggplot(powerCurves[powerCurves$InterimNumber==nInterims&powerCurves$Subphenotype=="1",], aes(fill=Result, y=Probability, x=OR)) + 
-    geom_bar(position="fill", stat="identity")+theme(legend.position="none")+labs(x="OR in subgroup 1")+scale_fill_manual(values=palette)+ geom_text(position=position_fill(vjust=0.5),aes(y=Probability,x=OR,label = ifelse(Probability==0,"",round(Probability/100,2))), size=3)
+hypoplot<-ggplot(powerCurves[powerCurves$InterimNumber==nInterims&powerCurves$Subphenotype=="hypo",], aes(fill=Result, y=Probability, x=OR)) + 
+    geom_bar(position="fill", stat="identity")+theme(legend.position="none")+labs(x="OR in hypo")+scale_fill_manual(values=palette)+ geom_text(position=position_fill(vjust=0.5),aes(y=Probability,x=OR,label = ifelse(Probability==0,"",round(Probability/100,2))), size=3)
 
-plot2<-ggplot(powerCurves[powerCurves$InterimNumber==nInterims&powerCurves$Subphenotype=="2",], aes(fill=Result, y=Probability, x=OR)) + 
-    geom_bar(position="fill", stat="identity")+labs(x="OR in subgroup 2")+scale_fill_manual(values=palette)+ geom_text(position=position_fill(vjust=0.5),aes(y=Probability,x=OR,label = ifelse(Probability==0,"",round(Probability/100,2))), size=3)
-
-
-
-legend<-get_legend(plot2)
-
-plot2<-plot2 +theme(legend.position="none")
+hyperplot<-ggplot(powerCurves[powerCurves$InterimNumber==nInterims&powerCurves$Subphenotype=="hyper",], aes(fill=Result, y=Probability, x=OR)) + 
+    geom_bar(position="fill", stat="identity")+labs(x="OR in hyper")+scale_fill_manual(values=palette)+ geom_text(position=position_fill(vjust=0.5),aes(y=Probability,x=OR,label = ifelse(Probability==0,"",round(Probability/100,2))), size=3)
 
 
 
-gg <- arrangeGrob(plot1,plot2, legend, ncol=3, widths=c(1.5,1.5,1)) #generates graph
-ggsave("powerBars.png",gg)
+legend<-get_legend(hyperplot)
+
+hyperplot<-hyperplot +theme(legend.position="none")
+
+gg <- arrangeGrob(hypoplot,hyperplot, legend, ncol=3, widths=c(1.5,1.5,1)) #generates g
+
+ggsave("powerBars.png", gg)
+
