@@ -91,7 +91,7 @@ if(length(commandArgs(trailingOnly=TRUE)) <= 2) {
 } 
 
 
-mc_cores=18
+mc_cores=4
 print(glue::glue('trying with {mc_cores}'))
 
 
@@ -174,11 +174,9 @@ Wrapper<- function(
 
 t2=Sys.time()
 
-Trials<-8
-
 results_wrap<-Wrapper(   
-    number_node =m,
-    beta_list =beta_0_select,
+    number_node =core_id,
+    beta_list   =beta_0_select,
     model           = y ~ treatment,
     var             = list(y = multinomial_random,
                            treatment = treatalloc.fun),
@@ -189,7 +187,7 @@ results_wrap<-Wrapper(
     #                       multinom_rand_dset2 # this is the treatment 
     #), 
     which           = c(2),   # Select which groups are treatments
-    R               = Trials,
+    R               = Trials_alloc,
     control.fixed = list(mean = list( treatment = 0), prec = 0.1),
     control.compute=list(dic=TRUE, cpo=TRUE, waic=TRUE, config = TRUE),
     alternative     = c("greater"), # One or two sided hypothesis
@@ -197,8 +195,8 @@ results_wrap<-Wrapper(
     
     prob0           = c("UC"=1,"Simvastatin"=1),#,"Baricitinib"=1),
     N               = 504*2, # Assume the maximum cap of hypoinflammatory is reached
-    interim         = list(recruited=list(m0 = 89*2    #89*3 # Trigger interim at 89 patients per arm
-                                          ,m  = 49*2)), # As per the recruitment expected Do interims at 49/ arm
+    interim         = list(recruited=list(m0 = 80*2    # Trigger interim at 89 patients per arm
+                                          ,m = 44*2)), # As per the recruitment expected Do interims at 49/ arm
     eff.arm         = efficacy.arm.fun, # Efficiency function of posteriors
     delta.eff       = log(1.1), # Select which interims select efficiency beta P(beta > delta.fut)
     eff.arm.control = list(b.eff = 0.84), # select the probability of the posterior > beta  
@@ -207,7 +205,7 @@ results_wrap<-Wrapper(
     fut.arm.control = list(b.fut = 1-0.78), # select the probability of the posterior > beta  
     delta.RAR       = 0,
     computation     = "parallel",
-    mc.cores        = 4,
+    mc.cores        = mc_cores,
     H0              = FALSE,
     seed_set        = ceiling(unique_core_id/number_betas),
     eff.trial=efficacy.arm.fun,
@@ -219,11 +217,8 @@ results_wrap<-Wrapper(
 t3<-Sys.time()
 print(t3-t2)
 
-results_wrap$data_inputs
-
 saveRDS(results_wrap,
-        paste0(pres_wd,'/Results/simulation',m,'.rds'))
+        paste0(pres_wd,'/Results/simulation_10k_hypo_',m,'.rds'))
 
-# View this in the local R data session
-results_wrap_100
+
 
