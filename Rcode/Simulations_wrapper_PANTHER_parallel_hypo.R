@@ -45,9 +45,10 @@ library(magrittr)
 library(dplyr)
 library(INLA)
 
-# Load the distribution of probabilities - and choose hypo/hyper samples
-primOutDist_panth<- read.csv(paste0("/rds/general/user/nb221/home/ICTU/Sample_size","/excel_distributions/VFDdistributions_logodds.csv"),header=TRUE) 
-source(paste0("/rds/general/user/nb221/home/ICTU/Sample_size","/Rcode/batss_glm_breakdown.R"))
+# Load the distribution of probabilities - and choose hypo/hyper samples - 
+# CHANGE PATHS TO APPROPIATE ONE IF getwd() not selecting the right location
+primOutDist_panth<- read.csv(paste0(getwd(),"../excel_distributions/VFDdistributions_logodds.csv"),header=TRUE) 
+source(paste0(getwd(),"../Rcode/batss_glm_breakdown.R"))
 
 
 # beta_0_select<-primOutDist_panth %>% dplyr::select(p_hyper_c,
@@ -67,20 +68,28 @@ number_betas<-ncol(beta_0_select)-1
 
 if (length(commandArgs(trailingOnly=TRUE))!=0){
     args=commandArgs(trailingOnly=TRUE)
-    print(args)
+    print(args) #print information of underlying run
     Trials = as.numeric(args[1])
-    pres_wd = as.numeric(args[2])} else {
+    pres_wd = as.character(args[2])} else {
     setwd(paste0(rstudioapi::getSourceEditorContext()$path,"/../.."))
     pres_wd = getwd()}
 if(length(commandArgs(trailingOnly=TRUE)) <= 2) {
-    m=1 # setting the m variable 
-} else {m = as.numeric(args[3])} # M will be the array job split - if applicatble
+    number_cores   = 1 # setting the m variable 
+    unique_core_id = 1
+    core_id        = 1
+    Trials_alloc   = Trials
+} else {
+    
+    unique_core_id=as.numeric(args[3])
+    number_cores = as.numeric(args[4])
+    
+    # Transformations following
+    if(as.numeric(args[3])%%number_betas==0){core_id=number_betas}else{core_id=as.numeric(args[3])%%number_betas}
+    Trials_alloc = ceiling(Trials/(number_cores/number_betas))
+    message(glue::glue('This is the number of HYPER trials calculated in this core: {Trials_alloc} and these are the number of cores {number_cores} 
+                     - but the id of this one is {unique_core_id}'))
+} 
 
-#nnodes = as.numeric(args[3]) # not needed unles many simulation chosen
-#m = as.numeric(args[4])
-
-
-source(paste0(pres_wd,"/Rcode/batss_glm_breakdown.R"))
 
 Wrapper<- function(
         number_node =1,
