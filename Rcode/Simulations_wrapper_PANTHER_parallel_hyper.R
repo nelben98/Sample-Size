@@ -218,7 +218,7 @@ t3<-Sys.time()
 print(t3-t2)
 
 saveRDS(results_wrap,
-        paste0(pres_wd,'/Results/simulation_10k_hypo_',m,'.rds'))
+        paste0(pres_wd,'/Results/simulation_10k_hyper_',m,'.rds'))
 
 
 
