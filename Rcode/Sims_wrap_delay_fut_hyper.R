@@ -45,10 +45,11 @@ library(magrittr)
 library(dplyr)
 library(INLA)
 
+setwd(paste0(rstudioapi::getSourceEditorContext()$path,"/.."))
 # Load the distribution of probabilities - and choose hypo/hyper samples - 
 # CHANGE PATHS TO APPROPIATE ONE IF getwd() not selecting the right location
-primOutDist_panth<- read.csv(paste0(getwd(),"../excel_distributions/VFDdistributions_logodds.csv"),header=TRUE) 
-source(paste0(getwd(),"../Rcode/batss_glm_breakdown.R"))
+primOutDist_panth<- read.csv(paste0(getwd(),"/../excel_distributions/VFDdistributions_logodds.csv"),header=TRUE) 
+source(paste0(getwd(),"/../Rcode/batss_glm_breakdown.R"))
 
 
 beta_0_select<-primOutDist_panth %>% dplyr::select(p_hyper_c,
@@ -77,6 +78,7 @@ if(length(commandArgs(trailingOnly=TRUE)) <= 2) {
     number_cores   = 1 # setting the m variable 
     unique_core_id = 1
     core_id        = 1
+    Trials         = 5
     Trials_alloc   = Trials
 } else {
     
@@ -92,6 +94,7 @@ if(length(commandArgs(trailingOnly=TRUE)) <= 2) {
 
 
 mc_cores=4
+futility_delays<-c(0,1,2,3,4,5,6)
 print(glue::glue('trying with {mc_cores}'))
 
 
@@ -174,7 +177,7 @@ Wrapper<- function(
 
 t2=Sys.time()
 for (delay in futility_delays) {
-    
+    if (delay==0) {delta_futility = log(1.075)} else if (delay >0){delta_futility =c(rep(NA,delay), rep(log(1.075),13-delay))}
     results_wrap<-Wrapper(   
         number_node     = core_id,
         beta_list =beta_0_select,
@@ -195,14 +198,14 @@ for (delay in futility_delays) {
         map_probabilities = TRUE, # This variable will apply new maps to the days of
         
         prob0           = c("UC"=1,"Simvastatin"=1),#,"Baricitinib"=1),
-        N               = 504*2, # Assume the maximum cap of hypoinflammatory is reached
-        interim         = list(recruited=list(m0 = 80*2    #89*3 # Trigger interim at 89 patients per arm
-                                              ,m  = 44*2)), # As per the recruitment expected Do interims at 49/ arm
+        N               = 529*2, # Assume the maximum cap of hypoinflammatory is reached
+        interim         = list(recruited=list(m0 = 73*2    #89*3 # Trigger interim at 89 patients per arm
+                                              ,m  = 38*2)), # As per the recruitment expected Do interims at 49/ arm
         eff.arm         = efficacy.arm.fun, # Efficiency function of posteriors
         delta.eff       = log(1.1), # Select which interims select efficiency beta P(beta > delta.fut)
         eff.arm.control = list(b.eff = 0.84), # select the probability of the posterior > beta  
         fut.arm         = futility.arm.fun,
-        delta.fut       = c(rep(NA,delay), rep(log(1.075),13-delay)), # select the analysed efficiency beta P(beta > delta.fut)
+        delta.fut       = delta_futility, # select the analysed efficiency beta P(beta > delta.fut)
         fut.arm.control = list(b.fut = 1-0.78), # select the probability of the posterior > beta  
         delta.RAR       = 0,
         computation     = "parallel",#'sequential'
@@ -216,7 +219,7 @@ for (delay in futility_delays) {
     
     
     saveRDS(results_wrap,
-            paste0('/Results/sims_hypo_',unique_core_id,'delay_fut_by',delay,'.rds'))
+            paste0(getwd(),'/Results/sims_hyper_',unique_core_id,'delay_fut_by',delay,'.rds'))
     
 }
 
