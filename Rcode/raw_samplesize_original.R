@@ -190,14 +190,18 @@ for (m in 1:nSims) {
     
     for (g in 1:nPhenotypes){
         # control arm: simulate draws from multinomial distribution
-        rawSimData_c[[g]]<-t(rmultinom(interimN[[g]][nInterims,2],size=1,prob=VFDdists[,names(VFDdists)==paste0("p_",phenotypes[g],"_null")]))
+        rawSimData_c[[g]]<-t(rmultinom(interimN[[g]][nInterims,2],size=1,
+                                       prob=VFDdists[,names(VFDdists)==paste0("p_",phenotypes[g],"_null")])
+                             )
         # treatment arm for each treatment profile for each active treatment
         
         
         rawSimData_t[[g]]<-list()
         
         for (p in 1:nProfiles){
-            rawSimData_t[[g]][[p]]<-t(rmultinom(interimN[[g]][nInterims,2],size=1,prob=VFDdists[,names(VFDdists)==paste0("p_",phenotypes[g],"_",profiles[p])]))
+            rawSimData_t[[g]][[p]]<-t(rmultinom(interimN[[g]][nInterims,2],size=1,
+                                                prob=VFDdists[,names(VFDdists)==paste0("p_",phenotypes[g],"_",profiles[p])])
+                                      )
             
             
             # the above yields data with a column for each possible outcome value and 1s indicating the outcome for each observation
@@ -206,7 +210,7 @@ for (m in 1:nSims) {
             # here the control and active data are also stacked into a single dataset (one for each profile/pheotype)
             for (i in 1:nrow(simData[[g]][[p]])) {
                 if(simData[[g]][[p]]$treat[i]==0){
-                    simData[[g]][[p]]$OSFD[i]<-which(rawSimData_c[[g]][i,]==1)-2
+                    simData$OSFD[i]<-which(rawSimData_c[[g]][i,]==1)-2
                 }			
                 if(simData[[g]][[p]]$treat[i]==1){
                     simData[[g]][[p]]$OSFD[i]<-which(rawSimData_t[[g]][[p]][i-interimN[[g]][nInterims,1],]==1)-2		
@@ -229,7 +233,7 @@ for (m in 1:nSims) {
         for (g in 1:nPhenotypes){
             simDataAll[[p]]<-rbind(simDataAll[[p]],simData[[g]][[p]])
         }
-        # randomise order of simulated data
+        # randomise order of simulated data - for each profile order of both
         simDataRand[[p]]<-simDataAll[[p]][order(sample(1:nrow(simDataAll[[p]]))),]
         rownames(simDataRand[[p]])<-NULL
         # subset first N_int patients for each interim
