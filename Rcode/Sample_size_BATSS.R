@@ -107,7 +107,7 @@ scenario2 = batss.glm.pom(
     fut.arm         = futility.arm.fun, # Futility function of posteriors - saved in batss_glm_breakdown.R
     
     delta.eff       = log(1.1),             # Select which interims select efficiency beta P(beta > delta.eff)
-    eff.arm.control = list(b.eff = 0.84),   # select the probability of the posterior > beta  
+    eff.arm.control = list(b.eff = 0.84),   # select the probability of the posterior > beta  ### CHANGED FROM WEBSITE? 
     delta.fut       = log(1.075),           # select the analysed efficiency beta P(beta > delta.fut)
     fut.arm.control = list(b.fut = 1-0.78), # select the probability of the posterior > beta  
     delta.RAR       = 0,                    # RAR options not used - set to 0

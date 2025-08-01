@@ -47,6 +47,8 @@ library(INLA)
 
 # Load the distribution of probabilities - and choose hypo/hyper samples - 
 # CHANGE PATHS TO APPROPIATE ONE IF getwd() not selecting the right location
+setwd(paste0(rstudioapi::getSourceEditorContext()$path,"/.."))
+
 primOutDist_panth<- read.csv(paste0(getwd(),"../excel_distributions/VFDdistributions_logodds.csv"),header=TRUE) 
 source(paste0(getwd(),"../Rcode/batss_glm_breakdown.R"))
 
